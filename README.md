@@ -12,14 +12,13 @@ Ce projet d'une semaine est une exploration pratique des fondements et des limit
 * **Partie 2 - Planification & Coordination :** Distribution des tâches, définition du calendrier interne, suivi des avancées de l'équipe et structuration logique du rapport final.
 
 ### 📈 Romain (Modélisation de Base & Crash-Test)
-* Génération du jeu de données initial (`set.seed()`, `runif()`) et ajustement de la régression linéaire simple idéale.
-* Implémentation des scénarios de dégradation : introduction d'un bruit non centré et d'une variance non constante (hétéroscédasticité).
-* Génération des premiers graphiques de diagnostic pour l'analyse des résidus standardisés.
+* Génération du jeu de données initial et ajustement de la régression linéaire simple.
+* **Inférence statistique :** Estimation des écarts-types des estimateurs ($\hat{a}$ et $\hat{b}$), calcul des t-statistiques, définition des régions de rejet et analyse des p-values pour le test de nullité de la pente ($H_0: a = 0$).
+* **Crash-Test :** Observer comment un bruit non centré ou hétéroscédastique fausse les p-values et déplace la région de rejet (le risque d'erreur de type I).
 
 ### 📐 Thibaud (Transformations & Modèles Avancés)
-* Étude et implémentation du changement de variable pour linéariser et résoudre le modèle $aX^2+b$.
-* Exploration empirique du modèle quadratique complet $aX^2+bX+c$ (analyse de ce que l'on peut faire et ne pas faire).
-* Comparaison des résidus standardisés entre les modèles polynomiaux et le modèle linéaire simple.
+* Implémentation et linéarisation du modèle $aX^2+b$ et du polynôme complet $aX^2+bX+c$.
+* **Inférence multi-paramètres :** Analyse des p-values pour chaque coefficient (est-ce que le terme en $X^2$ apporte un vrai plus par rapport au terme en $X$ ?).
 
 ---
 
@@ -29,14 +28,15 @@ Ce projet d'une semaine est une exploration pratique des fondements et des limit
 * Fixation de la graine via `set.seed()` pour garantir un jeu de données unique et reproductible sur toute la durée du projet.
 * Génération de la variable explicative avec $n$ observations via `runif(n, li, la)`.
 
-### Étape 2 : Le Scénario Idéal
+### Étape 2 : Le Scénario Idéal (Régression Linéaire Simple)
 * Ajout d'un bruit gaussien centré et homoscédastique.
-* Ajustement du modèle linéaire par la méthode des moindres carrés ordinaires.
+* Ajustement du modèle par les moindres carrés.
+* **Validation Statistique :** Analyse du sommaire du modèle (`summary(lm(...))`). Étude de la p-value associée au coefficient $a$. Si p-value < 5% (seuil classique), rejet de $H_0: a=0$, la pente est statistiquement significative.
+* Graphique de la région de rejet sous la distribution de Student.
 
 ### Étape 3 : Le Crash-Test (Dégradation des Hypothèses)
-* Simulation d'un biais systématique (bruit non centré).
-* Simulation d'une instabilité de la variance (variance non constante).
-* Identification des impacts visuels et mathématiques sur les résidus standardisés.
+* Simulation d'un biais (bruit non centré) et d'hétéroscédasticité.
+* **Impact sur l'inférence :** Analyser comment ces violations d'hypothèses biaisent les estimateurs et rendent les p-values trompeuses (par exemple, rejeter $H_0$ à tort alors que le modèle est mauvais).
 
 ### Étape 4 : Sortir de la Ligne (Transformations)
 * Application d'un changement de variable pour ramener le modèle $aX^2+b$ à une forme linéaire.
