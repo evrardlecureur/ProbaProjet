@@ -10,9 +10,9 @@ Ce projet d'une semaine est une exploration pratique des fondements et des limit
 ### 🛠️ Evrard (Planification & Structure)
 * **Partie 1 - Gestion du Dépôt :** Initialisation du GitHub, rédaction et mise à jour du `README.md`, organisation de l'architecture des dossiers.
 * **Partie 2 - Planification & Coordination :** Distribution des tâches, définition du calendrier interne, suivi des avancées de l'équipe et structuration logique du rapport final.
-
+* ** Génération du jeu de données initial
 ### 📈 Romain (Modélisation de Base & Crash-Test)
-* Génération du jeu de données initial et ajustement de la régression linéaire simple.
+*  la régression linéaire simple.
 * **Inférence statistique :** Estimation des écarts-types des estimateurs ($\hat{a}$ et $\hat{b}$), calcul des t-statistiques, définition des régions de rejet et analyse des p-values pour le test de nullité de la pente ($H_0: a = 0$).
 * **Crash-Test :** Observer comment un bruit non centré ou hétéroscédastique fausse les p-values et déplace la région de rejet (le risque d'erreur de type I).
 
