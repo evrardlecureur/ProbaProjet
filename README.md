@@ -2,7 +2,7 @@
 
 ## Contexte et objectif
 
-Ce projet explore la régression linéaire sur un jeu de données réelles. L'objectif est d'expliquer une variable réponse à l'aide de modèles linéaires en justifiant chaque choix de modélisation.
+Ce projet explore la régression linéaire sur les jeux de données fournis par l'enseignante (Data1 à Data4 pour la régression simple, autres datasets pour la suite). L'objectif est d'expliquer une variable réponse à l'aide de modèles linéaires en justifiant chaque choix de modélisation.
 
 **Particularité :** le projet est réalisé en deux temps. D'abord par les étudiants seuls (niveau bac+3), puis avec assistance IA. Chaque section du rapport comporte un paragraphe dédié comparant les deux approches.
 
@@ -13,7 +13,6 @@ Ce projet explore la régression linéaire sur un jeu de données réelles. L'ob
 ### Evrard - Coordination + Sélection de variables
 
 - Structure du dépôt, coordination de l'équipe, calendrier
-- Génération et documentation des données simulées (`jeudonnées.R`)
 - **Sélection de variables :** méthode exhaustive (comparaison des 2^p modèles par R²_a), méthodes pas à pas (forward, backward, stepwise)
 - Rédaction des sections correspondantes du rapport
 
@@ -21,8 +20,9 @@ Ce projet explore la régression linéaire sur un jeu de données réelles. L'ob
 
 - **Modélisation de base :** ajustement MCO, estimation de â et b̂, droite de régression
 - **Inférence statistique :** test H0 : a = 0 via statistique de Student, région de rejet, p-valeur
-- **Vérification des hypothèses :** résidus standardisés, graphique QQ-plot, test de Kolmogorov-Smirnov sur les résidus studentisés
-- **Prédiction :** intervalles de confiance pour une nouvelle observation
+- **Vérification des hypothèses :** résidus studentisés, graphique résidus vs ajustés, QQ-plot, test de Kolmogorov-Smirnov
+- **Cas particuliers :** outliers (Dataset B), petit échantillon (Dataset C), relation non-linéaire en V (Dataset D)
+- **Prédiction :** intervalles de prédiction pour une nouvelle observation
 - Rédaction des sections correspondantes du rapport
 
 ### Thibaud - Régression multiple, polynomiale et ANOVA
@@ -49,18 +49,19 @@ L'objectif est de montrer concrètement ce que l'IA apporte par rapport à un tr
 
 ### Etape 1 - Exploration des données (tous)
 
-- Chargement des jeux de données réels
+- Chargement des jeux de données fournis
 - Choix de la variable réponse et des variables explicatives candidates
-- Statistiques descriptives, matrices de corrélation, visualisations préliminaires
+- Statistiques descriptives, visualisations préliminaires
 
 ### Etape 2 - Régression linéaire simple (Romain)
 
 - Ajustement `lm()` et lecture du `summary()`
 - Graphique nuage de points + droite ajustée
 - Test de Student sur la pente + graphique de la région de rejet sous la loi de Student
-- Analyse des résidus : graphique résidus vs valeurs ajustées, détection d'hétéroscédasticité
+- Analyse des résidus : graphique résidus vs ajustés, détection d'hétéroscédasticité
 - QQ-plot des résidus studentisés + test de Kolmogorov-Smirnov
-- Intervalle de confiance pour la prédiction d'une nouvelle observation
+- Traitement des cas problématiques : outliers, petit échantillon, non-linéarité
+- Intervalle de prédiction pour une nouvelle observation
 
 ### Etape 3 - Régression multiple, polynomiale et ANOVA (Thibaud)
 
@@ -88,13 +89,10 @@ L'objectif est de montrer concrètement ce que l'IA apporte par rapport à un tr
 
 ```
 /
-├── jeudonnées.R          # Génération des données simulées (Evrard)
-├── rapport.tex           # Rapport LaTeX
-├── script/
-│   ├── script_romain.R   # Régression simple, inférence, résidus (Romain)
-│   ├── script_thibaud.R  # Régression multiple, polynomiale, ANOVA (Thibaud)
-│   └── script_evrard.R   # Sélection de variables (Evrard)
-└── data/
-    ├── donnees_lineaires.csv
-    └── donnees_polynomiales.csv
+├── README.md
+├── rapport.tex           # Rapport LaTeX (tous)
+└── code/
+    ├── script_romain.R   # Régression simple, inférence, résidus (Romain)
+    ├── script_thibaud.R  # Régression multiple, polynomiale, ANOVA (Thibaud)
+    └── script_evrard.R   # Sélection de variables (Evrard)
 ```
