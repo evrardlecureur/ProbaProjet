@@ -1,1 +1,249 @@
+\documentclass[11pt,a4paper]{article}
 
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{float}
+
+\geometry{margin=2.5cm}
+
+\title{Projet Régression Linéaire \\ \large Polytech Nice Sophia -- MAM3}
+\author{Evrard Lecureur, Romain Ben, Thibaud [Nom]}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Introduction}
+% [À rédiger collectivement]
+Ce projet a pour objectif d'étudier en profondeur la régression linéaire à travers plusieurs jeux de données présentant chacun une difficulté particulière. La démarche adoptée consiste à traiter chaque problème une première fois par nos propres moyens (niveau bac+3), puis à comparer cette approche avec celle que l'on obtient en s'appuyant sur une IA. Le but n'est pas d'opposer les deux méthodes mais d'identifier précisément ce que l'IA apporte en plus d'un raisonnement statistique d'étudiant.
+
+\tableofcontents
+
+\newpage
+
+%======================================================================
+\section{Régression linéaire simple (Romain)}
+%======================================================================
+
+Cette section traite quatre jeux de données ($A$, $B$, $C$, $D$) couvrant chacun un cas typique : situation idéale, présence d'outliers, petit échantillon, et relation non-linéaire. Pour chaque dataset, on présente d'abord la démarche étudiant puis ce que l'IA apporte en complément.
+
+%----------------------------------------------------------------------
+\subsection{Cadre théorique}
+%----------------------------------------------------------------------
+
+Le modèle de régression linéaire simple s'écrit
+\[
+Y_i = a X_i + b + U_i, \qquad i = 1, \dots, n,
+\]
+où les $U_i$ sont supposés indépendants, de loi $\mathcal{N}(0, \sigma^2)$. Les estimateurs des moindres carrés ordinaires (MCO) sont
+\[
+\hat{a} = \frac{\sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y})}{\sum_{i=1}^n (X_i - \bar{X})^2}, \qquad \hat{b} = \bar{Y} - \hat{a}\bar{X}.
+\]
+Sous les hypothèses du modèle, $\hat{a}$ suit une loi normale et la statistique
+\[
+T = \frac{\hat{a}}{\widehat{\mathrm{SE}}(\hat{a})}
+\]
+suit une loi de Student à $n-2$ degrés de liberté sous $H_0 : a = 0$. La validation du modèle repose sur l'analyse des résidus studentisés, le QQ-plot de normalité, le test de Kolmogorov-Smirnov contre la loi $\mathcal{T}(n-3)$ et le graphique des résidus en fonction des valeurs ajustées.
+
+%----------------------------------------------------------------------
+\subsection{Dataset A : cas idéal}
+%----------------------------------------------------------------------
+
+\subsubsection{Approche étudiant}
+
+On ajuste le modèle avec \texttt{lm(Y \~{} X, data = A)} et on lit la sortie de \texttt{summary()}. Le coefficient de détermination $R^2$ est très élevé, la pente $\hat{a}$ est très significativement non nulle (p-valeur $< 2 \cdot 10^{-16}$). Le tracé du nuage de points avec la droite de régression montre un alignement net (figure~\ref{fig:A_droite}).
+
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.7\textwidth]{figures/A_nuage_droite.png}
+    \fbox{\parbox{0.7\textwidth}{\centering \vspace{2cm} [FIGURE : nuage de points + droite de régression pour Dataset A] \vspace{2cm}}}
+    \caption{Dataset A : nuage de points et droite ajustée.}
+    \label{fig:A_droite}
+\end{figure}
+
+\paragraph{Diagnostic des résidus.} Le graphique des résidus studentisés en fonction des valeurs ajustées (figure~\ref{fig:A_residus}) ne présente aucun motif visible : les points se répartissent symétriquement autour de zéro, sans pattern en entonnoir, ce qui valide l'hypothèse d'homoscédasticité. Le QQ-plot suit la première bissectrice, indiquant la normalité des résidus.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : résidus vs ajustés Dataset A] \vspace{2cm}}}
+    \hfill
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : QQ-plot Dataset A] \vspace{2cm}}}
+    \caption{Diagnostic des résidus du modèle ajusté sur le Dataset A.}
+    \label{fig:A_residus}
+\end{figure}
+
+\paragraph{Test de Kolmogorov-Smirnov.} La p-valeur du test KS contre la loi $\mathcal{T}(n-3)$ est largement supérieure à $0{,}05$ : on ne rejette pas l'hypothèse de normalité. Les quatre hypothèses du modèle sont validées.
+
+\paragraph{Test de Student.} On calcule manuellement
+\[
+\hat{\sigma} = \sqrt{\tfrac{1}{n-2} \sum_i \hat{U}_i^2}, \quad \widehat{\mathrm{SE}}(\hat{a}) = \frac{\hat{\sigma}}{\sqrt{\sum_i (X_i - \bar{X})^2}},
+\]
+puis $t_{\mathrm{obs}} = \hat{a}/\widehat{\mathrm{SE}}(\hat{a})$. La valeur observée dépasse très largement le seuil critique $t_{0,975, n-2}$ : on rejette $H_0$, la pente est significative (figure~\ref{fig:A_rejet}).
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.6\textwidth}{\centering \vspace{2cm} [FIGURE : densité de Student avec région de rejet en rouge] \vspace{2cm}}}
+    \caption{Région de rejet du test bilatéral sur la pente, Dataset A.}
+    \label{fig:A_rejet}
+\end{figure}
+
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Vérification manuelle systématique.} L'IA propose de recalculer $\hat{a}$ et $\hat{b}$ à la main à partir des formules du cours, ce qui sécurise la lecture des sorties \texttt{R} et fournit une trace de calcul exploitable dans le rapport.
+    \item \textbf{Tests formels supplémentaires.} En plus des outils graphiques, l'IA propose le test de Breusch-Pagan (\texttt{bptest}) pour l'homoscédasticité et le test de Shapiro-Wilk pour la normalité. Cela permet d'objectiver des conclusions qu'un étudiant tirerait uniquement du QQ-plot.
+    \item \textbf{Visualisation de la région de rejet.} Tracer la densité de Student avec la région de rejet remplie en rouge n'est pas une démarche spontanée d'étudiant, mais elle clarifie immédiatement la procédure du test et est très lisible dans un rapport.
+    \item \textbf{Intervalle de prédiction.} L'IA propose directement \texttt{predict(modele, interval = "prediction")} pour obtenir l'intervalle de prédiction d'une nouvelle observation, ce qui boucle proprement la chaîne modèle-inférence-prédiction.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\subsection{Dataset B : présence d'outliers}
+%----------------------------------------------------------------------
+
+\subsubsection{Approche étudiant}
+
+L'ajustement direct produit un $R^2$ correct mais le graphique des résidus studentisés fait apparaître plusieurs points avec $|\text{résidu}| > 3$ (figure~\ref{fig:B_residus}). Le QQ-plot dévie nettement aux extrémités et le test KS rejette la normalité.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : résidus studentisés Dataset B (avec lignes à $\pm 3$)] \vspace{2cm}}}
+    \hfill
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : QQ-plot Dataset B avant nettoyage] \vspace{2cm}}}
+    \caption{Diagnostic du modèle initial sur le Dataset B.}
+    \label{fig:B_residus}
+\end{figure}
+
+\paragraph{Identification et retrait.} On identifie les indices des observations avec $|\text{résidu studentisé}| > 3$, on les met en évidence sur le nuage de points (figure~\ref{fig:B_outliers}) puis on refit le modèle sur les données nettoyées. Le QQ-plot, le test KS et le graphique des résidus du modèle nettoyé sont alors satisfaisants. La pente passe de $\hat{a}_{\text{initial}}$ à $\hat{a}_{\text{nettoyé}}$, ce qui illustre la sensibilité de la MCO aux valeurs extrêmes.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : nuage Dataset B avec outliers en rouge] \vspace{2cm}}}
+    \hfill
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : nuage Dataset B nettoyé + nouvelle droite] \vspace{2cm}}}
+    \caption{Avant/après retrait des outliers, Dataset B.}
+    \label{fig:B_outliers}
+\end{figure}
+
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Distance de Cook.} L'IA introduit la distance de Cook pour distinguer les points \emph{aberrants} (résidu élevé) des points \emph{influents} (gros impact sur les coefficients). Un point peut être atypique sans être influent, et inversement. C'est une nuance importante qu'un étudiant ne fait généralement pas spontanément.
+    \item \textbf{Régression robuste.} Plutôt que de supprimer des observations, l'IA propose \texttt{rlm()} (package \texttt{MASS}) qui pondère automatiquement les points selon leur résidu (M-estimateurs). Cela évite la décision arbitraire de retrait et fournit un estimateur cohérent même en présence d'outliers.
+    \item \textbf{Comparaison visuelle.} L'IA superpose sur un même graphique les trois droites (MCO complet, \texttt{rlm}, MCO sans outliers) ce qui permet de juger d'un coup d'\oe il du compromis entre les approches.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : distance de Cook Dataset B] \vspace{2cm}}}
+    \hfill
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : 3 droites superposées (MCO, rlm, sans outliers)] \vspace{2cm}}}
+    \caption{Diagnostics et méthodes alternatives proposés par l'IA pour le Dataset B.}
+    \label{fig:B_IA}
+\end{figure}
+
+%----------------------------------------------------------------------
+\subsection{Dataset C : petit échantillon ($n = 50$)}
+%----------------------------------------------------------------------
+
+\subsubsection{Approche étudiant}
+
+Le modèle s'ajuste sans difficulté apparente et les hypothèses semblent satisfaites graphiquement. Toutefois, la lecture du \texttt{summary()} met en évidence une erreur standard $\widehat{\mathrm{SE}}(\hat{a})$ nettement plus large que celle obtenue sur le Dataset A. La largeur de l'intervalle de confiance à 95\% sur la pente est environ $\sqrt{n_A / n_C} \approx 4{,}5$ fois plus grande, comme attendu d'après la décroissance en $1/\sqrt{n}$ des écarts-types des estimateurs.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : nuage Dataset C + droite] \vspace{2cm}}}
+    \hfill
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : résidus Dataset C] \vspace{2cm}}}
+    \caption{Ajustement et résidus pour le Dataset C ($n = 50$).}
+    \label{fig:C_main}
+\end{figure}
+
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Tests formels sur petit échantillon.} En petit $n$, les diagnostics graphiques sont peu fiables car les patterns visuels peuvent être trompeurs. L'IA insiste sur le test de Breusch-Pagan pour confirmer ou infirmer l'homoscédasticité au-delà de l'\oe il.
+    \item \textbf{Erreurs standards robustes (sandwich).} En cas de doute sur l'homoscédasticité, l'IA propose \texttt{vcovHC(modele, type = "HC1")} qui fournit une matrice de variance robuste à l'hétéroscédasticité. C'est un raffinement standard en économétrie qu'un étudiant ne connaît pas en général.
+    \item \textbf{Bootstrap pour l'intervalle de confiance.} La normalité de $\hat{a}$ repose sur un argument asymptotique. Avec $n = 50$, l'IA propose un bootstrap par rééchantillonnage (\texttt{boot}, $R = 2000$) pour obtenir un intervalle de confiance percentile qui ne dépend pas de l'hypothèse de normalité. La comparaison avec l'intervalle classique permet de juger de la fiabilité de l'inférence asymptotique.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\subsection{Dataset D : relation non-linéaire en V}
+%----------------------------------------------------------------------
+
+\subsubsection{Approche étudiant -- tentative directe}
+
+L'ajustement d'un modèle linéaire simple donne un $R^2$ très faible et le graphique des résidus présente un motif en V flagrant (figure~\ref{fig:D_simple}). Le test KS rejette la normalité. Le modèle linéaire est manifestement inadapté.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : nuage Dataset D + droite simple] \vspace{2cm}}}
+    \hfill
+    \fbox{\parbox{0.45\textwidth}{\centering \vspace{2cm} [FIGURE : résidus Dataset D montrant le V] \vspace{2cm}}}
+    \caption{Tentative d'ajustement linéaire direct sur le Dataset D.}
+    \label{fig:D_simple}
+\end{figure}
+
+\subsubsection{Approche étudiant -- découpage en deux régressions}
+
+L'observation du nuage de points suggère un point de rupture autour de $X = 30$. On scinde le jeu de données en deux sous-ensembles ($X < 30$ et $X \geq 30$) sur lesquels on ajuste deux régressions linéaires séparées. Les deux droites obtenues collent bien aux deux branches du V (figure~\ref{fig:D_split}), les diagnostics de résidus deviennent satisfaisants sur chaque sous-modèle et les $R^2$ remontent à des valeurs très acceptables.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.7\textwidth}{\centering \vspace{2cm} [FIGURE : Dataset D avec les 2 droites (gauche bleue, droite verte)] \vspace{2cm}}}
+    \caption{Ajustement par morceaux du Dataset D, point de rupture fixé à $X = 30$.}
+    \label{fig:D_split}
+\end{figure}
+
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Estimation automatique du point de rupture.} Le choix $X = 30$ est visuel et arbitraire. L'IA propose la régression segmentée (package \texttt{segmented}, fonction \texttt{segmented()}) qui estime le point de rupture par optimisation conjointe avec les pentes. On obtient une estimation $\hat{\psi}$ accompagnée de son erreur standard, ce qui transforme un choix \emph{ad hoc} en une véritable estimation statistique.
+    \item \textbf{Modélisation par variable indicatrice.} L'IA propose aussi de tout traiter en un seul \texttt{lm()} en introduisant $Z = \max(X - 30, 0)$. Le modèle $Y = aX + cZ + b + U$ est alors un cas particulier de régression multiple (à connecter avec la section de Thibaud), ce qui unifie le traitement.
+    \item \textbf{Comparaison de $R^2$.} L'IA propose une comparaison systématique des $R^2$ entre modèle simple, modèle par morceaux et modèle segmenté, qui permet de quantifier le gain de chaque raffinement.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.7\textwidth}{\centering \vspace{2cm} [FIGURE : Dataset D avec la régression segmentée] \vspace{2cm}}}
+    \caption{Régression segmentée sur le Dataset D, point de rupture estimé automatiquement.}
+    \label{fig:D_seg}
+\end{figure}
+
+%----------------------------------------------------------------------
+\subsection{Synthèse}
+%----------------------------------------------------------------------
+
+Les quatre datasets illustrent quatre situations pratiques rencontrées en régression simple :
+\begin{itemize}
+    \item Dataset A : tout fonctionne, on valide la chaîne complète (ajustement, test, résidus, prédiction).
+    \item Dataset B : la MCO est sensible aux outliers. L'approche étudiant consiste à les retirer ; l'IA propose des méthodes plus robustes (rlm, distance de Cook).
+    \item Dataset C : la précision des estimateurs se dégrade en $1/\sqrt{n}$. L'IA propose des outils adaptés au petit $n$ (bootstrap, erreurs standards robustes).
+    \item Dataset D : le modèle linéaire est inadapté pour une relation en V. Le découpage manuel fonctionne mais l'IA introduit la régression segmentée qui formalise et automatise la démarche.
+\end{itemize}
+
+\newpage
+%======================================================================
+\section{Régression multiple, polynomiale et ANOVA (Thibaud)}
+%======================================================================
+
+% [À rédiger par Thibaud]
+
+\newpage
+%======================================================================
+\section{Sélection de variables (Evrard)}
+%======================================================================
+
+% [À rédiger par Evrard]
+
+\newpage
+\section*{Conclusion}
+% [À rédiger collectivement]
+
+\end{document}
