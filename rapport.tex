@@ -13,7 +13,7 @@
 \geometry{margin=2.5cm}
 
 \title{Projet Régression Linéaire \\ \large Polytech Nice Sophia -- MAM3}
-\author{Evrard Lecureur, Romain Ben, Thibaud [Nom]}
+\author{Evrard Lecureur, Romain Ben, Thibaud}
 \date{\today}
 
 \begin{document}
@@ -233,7 +233,176 @@ Les quatre datasets illustrent quatre situations pratiques rencontrées en régr
 \section{Régression multiple, polynomiale et ANOVA (Thibaud)}
 %======================================================================
 
-% [À rédiger par Thibaud]
+Cette section étend la régression linéaire dans trois directions : plusieurs variables explicatives quantitatives (régression multiple, jeu \texttt{data5}), une variable explicative dont l'effet n'est pas linéaire mais polynomial (\texttt{data4}, traité par Romain par découpage en morceaux et repris ici sous forme polynomiale), et enfin l'introduction de variables explicatives qualitatives (analyse de la variance, \texttt{data7}). Le code R complet correspondant se trouve dans \texttt{code/script\_thibaud.R}.
+
+%----------------------------------------------------------------------
+\subsection{Régression linéaire multiple (data5)}
+%----------------------------------------------------------------------
+
+\subsubsection{Cadre théorique}
+
+Le modèle de régression linéaire multiple à $p$ variables explicatives s'écrit, pour $i = 1, \dots, n$,
+\[
+Y_i = \beta_0 + \beta_1 X_{i,1} + \beta_2 X_{i,2} + \cdots + \beta_p X_{i,p} + U_i,
+\]
+avec les mêmes hypothèses qu'en régression simple sur les bruits $U_i$ (centrés, homoscédastiques, indépendants, gaussiens). En écriture matricielle $Y = \mathbb{X}\beta + U$, l'estimateur des moindres carrés est
+\[
+\hat{\beta} = (\mathbb{X}^\top \mathbb{X})^{-1} \mathbb{X}^\top Y,
+\]
+de matrice de covariance $\sigma^2 (\mathbb{X}^\top \mathbb{X})^{-1}$. Pour chaque coefficient on dispose d'un test de Student $H_0 : \beta_j = 0$, et la qualité globale du modèle est jugée par le $R^2$ et le test F de Fisher de nullité simultanée de toutes les pentes.
+
+\subsubsection{Approche étudiant}
+
+Le jeu \texttt{data5} contient $n = 500$ observations et cinq variables explicatives $X_1, \dots, X_5$. La matrice de corrélation (figure~\ref{fig:mult_pairs}) montre que seule $X_1$ est très fortement corrélée à $Y$ (corrélation proche de $1$). Les autres variables ne présentent aucune corrélation marginale visible avec $Y$.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{figures/mult_pairs.png}
+    \caption{\texttt{data5} : nuages de points croisés des cinq variables explicatives et de $Y$.}
+    \label{fig:mult_pairs}
+\end{figure}
+
+L'ajustement par \texttt{lm(Y \~{} X1 + X2 + X3 + X4 + X5)} donne un coefficient de détermination $R^2 = 0{,}9998$ et conduit aux conclusions suivantes (tableau résumé) :
+\begin{itemize}
+    \item $X_1$ est très significative ($\hat{\beta}_1 = 3{,}10$, $t = 1420$, $p < 2 \cdot 10^{-16}$) ;
+    \item $X_5$ est aussi significative ($\hat{\beta}_5 = -5{,}87$, $t = -9{,}01$, $p < 2 \cdot 10^{-16}$), bien que sa corrélation marginale avec $Y$ soit quasi nulle ;
+    \item $X_2$, $X_3$ et $X_4$ ne sont pas significatives au seuil $5\%$.
+\end{itemize}
+
+Le cas de $X_5$ illustre que l'analyse univariée (corrélation simple) peut masquer un effet réel. Une variable peut paraître sans lien avec $Y$ globalement mais expliquer une part résiduelle non négligeable de $Y$ une fois les autres variables prises en compte (effet \emph{net}).
+
+\paragraph{Diagnostic.} Les graphiques diagnostics standards (figure~\ref{fig:mult_diag}) ne montrent aucun motif suspect : résidus centrés, variance homogène, QQ-plot très droit. Le test de Kolmogorov-Smirnov sur les résidus studentisés contre $\mathcal{T}(n-p-1)$ donne $D = 0{,}021$ et $p = 0{,}98$ : on ne rejette pas la gaussianité des résidus.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/mult_diag.png}
+    \caption{Diagnostics du modèle complet sur \texttt{data5}.}
+    \label{fig:mult_diag}
+\end{figure}
+
+\paragraph{Réduction manuelle.} En retirant successivement la variable la moins significative, on aboutit au modèle $Y \sim X_1 + X_3 + X_4 + X_5$ (seule $X_2$ disparaît). La comparaison par test F emboîté donne $p = 0{,}25$ : le modèle réduit n'est pas significativement moins bon que le modèle complet, on retient donc le modèle réduit pour des raisons de parcimonie.
+
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Sélection automatique par AIC.} L'IA propose \texttt{step(modele, direction = "backward")} qui formalise la sélection \emph{backward} par critère AIC plutôt que par seuil de p-valeur. Sur \texttt{data5} les deux approches convergent vers le même modèle, ce qui rassure sur la stabilité du choix. Ce point fait le pont avec la section d'Evrard sur la sélection de variables.
+    \item \textbf{Multicolinéarité (VIF).} L'IA introduit le \emph{Variance Inflation Factor} (\texttt{car::vif}) pour détecter une éventuelle corrélation entre prédicteurs, qui gonflerait artificiellement les erreurs standards. Sur \texttt{data5} les VIF sont tous proches de $1$ : pas de problème de multicolinéarité.
+    \item \textbf{Distinction effet marginal / effet net.} L'IA aide à formaliser pourquoi $X_5$ apparaît non corrélée à $Y$ marginalement mais ressort très significativement dans le modèle complet : sa contribution est masquée par la variabilité énorme apportée par $X_1$, et n'est démasquée qu'une fois cette variabilité absorbée par le modèle. Un étudiant aurait probablement écarté $X_5$ sur la seule base de la corrélation simple.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\subsection{Régression polynomiale (data4)}
+%----------------------------------------------------------------------
+
+\subsubsection{Cadre théorique}
+
+La régression polynomiale est un cas particulier de régression linéaire multiple obtenu en utilisant comme variables explicatives les puissances successives d'une même variable $X$ :
+\[
+Y_i = \beta_0 + \beta_1 X_i + \beta_2 X_i^2 + \cdots + \beta_d X_i^d + U_i.
+\]
+Le modèle reste linéaire \emph{en les paramètres} $\beta_j$, ce qui permet d'utiliser tout l'arsenal des moindres carrés et des tests associés. Le choix du degré $d$ se fait en comparant des modèles emboîtés par test F.
+
+\subsubsection{Approche étudiant}
+
+Sur \texttt{data4} ($n = 1000$), Romain a constaté qu'un ajustement linéaire simple est inadapté et qu'un découpage en deux droites de part et d'autre de $X = 30$ rétablit la qualité de l'ajustement. On reprend ici le même jeu sous l'angle polynomial : la corrélation entre $X^2$ et $Y$ ($r = -0{,}78$) est nettement plus forte que celle entre $X$ et $Y$ ($r = -0{,}58$), ce qui suggère une composante quadratique forte (figure~\ref{fig:poly_scatter}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{figures/poly_scatter.png}
+    \caption{\texttt{data4} : nuage de points faisant apparaître une concavité.}
+    \label{fig:poly_scatter}
+\end{figure}
+
+L'ajustement d'un modèle quadratique $Y \sim X + X^2$ donne $R^2 = 0{,}919$ contre $R^2 = 0{,}334$ pour le modèle linéaire. Le test F de comparaison des deux modèles emboîtés donne $F = 7210$ avec $p < 2 \cdot 10^{-16}$ : le terme $X^2$ apporte une amélioration massive et incontestable. La figure~\ref{fig:poly_fit} superpose la droite simple (verte) et la parabole ajustée (rouge) avec son intervalle de prédiction à $95\%$.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/poly_fit.png}
+    \caption{\texttt{data4} : régression polynomiale de degré $2$, droite linéaire pour comparaison, et intervalle de prédiction à $95\%$.}
+    \label{fig:poly_fit}
+\end{figure}
+
+\paragraph{Choix du degré.} L'essai de degrés supérieurs continue d'améliorer le $R^2$ : $0{,}966$ au degré $3$ et $0{,}975$ au degré $4$, tous les coefficients restant significatifs. Le test de Kolmogorov-Smirnov sur les résidus studentisés du modèle de degré $2$ rejette toutefois la normalité ($p = 2{,}6 \cdot 10^{-10}$) : un degré $2$ capture l'essentiel de la structure mais des écarts résiduels subsistent. C'est exactement la situation où l'approche par morceaux de Romain et l'approche polynomiale donnent deux lectures complémentaires d'un même jeu de données.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/poly_diag.png}
+    \caption{Diagnostics du modèle polynomial de degré $2$ sur \texttt{data4}.}
+    \label{fig:poly_diag}
+\end{figure}
+
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Comparaison systématique des degrés.} L'IA propose une boucle automatisée sur $d \in \{1, 2, 3, 4\}$ avec à chaque fois $R^2$ ajusté, AIC et test F vs degré précédent. Cela évite la décision visuelle ``ça a l'air d'une parabole donc degré 2'' et formalise le choix.
+    \item \textbf{Utilisation de \texttt{poly()} orthogonal.} Pour les degrés élevés, les variables $X, X^2, X^3, \dots$ deviennent très corrélées entre elles (problème de conditionnement de $\mathbb{X}^\top \mathbb{X}$). L'IA recommande \texttt{poly(X, d)} qui construit une base de polynômes orthogonaux et stabilise numériquement l'inversion.
+    \item \textbf{Connexion à la régression par morceaux.} L'IA fait le lien explicite avec la régression segmentée de la section précédente : sur le même jeu \texttt{data4}, l'approche polynomiale et l'approche segmentée capturent toutes deux la non-linéarité, mais reposent sur des hypothèses différentes (lissage global vs rupture localisée). C'est une comparaison qu'un étudiant ne formalise pas spontanément.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\subsection{Analyse de la variance (data7)}
+%----------------------------------------------------------------------
+
+\subsubsection{Cadre théorique}
+
+L'analyse de la variance (ANOVA) est le cas particulier de la régression linéaire où la ou les variables explicatives sont qualitatives (\emph{facteurs}). Pour un seul facteur à $K$ modalités, le modèle s'écrit
+\[
+Y_{i,k} = \mu + \alpha_k + U_{i,k}, \qquad k = 1, \dots, K,
+\]
+avec une contrainte d'identifiabilité (par exemple $\alpha_1 = 0$). Le test fondamental est $H_0 : \alpha_1 = \cdots = \alpha_K$ contre $H_1$ : il existe au moins deux modalités d'effets différents. Sous $H_0$, la statistique de Fisher
+\[
+F = \frac{\mathrm{SC}_{\text{inter}} / (K - 1)}{\mathrm{SC}_{\text{intra}} / (n - K)}
+\]
+suit une loi $\mathcal{F}(K-1, n-K)$. L'extension à deux facteurs avec interaction permet de tester séparément l'effet de chaque facteur et l'effet de leur croisement.
+
+\subsubsection{Approche étudiant}
+
+Le jeu \texttt{data7} contient $n = 5000$ observations dont une variable binaire $X_6$ (codée $0/1$) et une variable entière $X_7 \in \{1, \dots, 15\}$ qui se prêtent naturellement à un traitement qualitatif. On définit donc deux facteurs :
+\begin{itemize}
+    \item $F_1$ : modalités \texttt{groupe0} / \texttt{groupe1} directement issues de $X_6$ ;
+    \item $F_2$ : trois modalités \texttt{bas} / \texttt{moyen} / \texttt{haut} obtenues en découpant $X_7$ aux seuils $6$ et $9$.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/anova_boxplots.png}
+    \caption{\texttt{data7} : distribution de $Y$ par modalité des deux facteurs.}
+    \label{fig:anova_box}
+\end{figure}
+
+Les moyennes empiriques par modalité sont quasi identiques ($27{,}7$ vs $27{,}5$ pour $F_1$ ; $29{,}1$, $27{,}1$, $27{,}8$ pour $F_2$) et les boxplots se chevauchent largement (figure~\ref{fig:anova_box}). L'ANOVA à un facteur confirme cette impression visuelle : $F_1$ donne $p = 0{,}85$, $F_2$ donne $p = 0{,}29$. L'ANOVA à deux facteurs avec interaction (\texttt{Y \~{} F1 * F2}) ne fait apparaître aucun effet significatif ($p_{F_1} = 0{,}85$, $p_{F_2} = 0{,}29$, $p_{F_1 \times F_2} = 0{,}66$). Le diagramme d'interaction (figure~\ref{fig:anova_inter}) montre deux courbes quasi parallèles, confirmant l'absence d'interaction.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/anova_interaction.png}
+    \caption{Diagramme d'interaction $F_1 \times F_2$.}
+    \label{fig:anova_inter}
+\end{figure}
+
+\paragraph{Validation des hypothèses.} L'hypothèse d'homoscédasticité est confortée par le test de Bartlett ($p = 0{,}71$ pour $F_1$, $p = 0{,}96$ pour $F_2$). En revanche, le test de Kolmogorov-Smirnov sur les résidus studentisés rejette la gaussianité ($p < 2 \cdot 10^{-16}$) : avec $n = 5000$ ce test devient extrêmement sensible et détecte de petits écarts à la normalité. Comme l'ANOVA est robuste à des écarts modérés à la normalité tant que l'homoscédasticité est satisfaite et que les effectifs sont équilibrés (ce qui est le cas), la conclusion d'absence d'effet reste fiable.
+
+\paragraph{Conclusion.} Sur ce jeu, $X_6$ et $X_7$ (vus comme facteurs) ne contribuent pas à expliquer $Y$. C'est un résultat négatif intéressant en soi : il oriente la modélisation vers les autres variables ($X_1, \dots, X_5$), confortant la pertinence d'une étude par régression multiple ou par sélection de variables.
+
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Choix raisonné des facteurs.} L'IA aide à distinguer ce qui est légitimement qualitatif (la binaire $X_6$) de ce qui est arbitrairement \emph{rendu} qualitatif (les seuils sur $X_7$). Elle souligne que le découpage de $X_7$ en trois classes fait perdre de l'information et propose, en alternative, de garder $X_7$ comme variable quantitative et de comparer les deux modélisations.
+    \item \textbf{Tests post-hoc.} L'IA propose le test de Tukey HSD (\texttt{TukeyHSD}) pour identifier, en cas d'effet significatif, quelles paires de modalités diffèrent. Ici toutes les comparaisons donnent des p-valeurs supérieures à $0{,}05$, cohérent avec l'ANOVA globale.
+    \item \textbf{Mise en garde sur les grands $n$.} L'IA insiste sur le fait que sur $n = 5000$, le test de Kolmogorov-Smirnov détecte des écarts à la normalité minuscules sans conséquence pratique. Elle recommande de regarder en priorité le QQ-plot et la régularité visuelle des résidus, et de ne s'inquiéter du KS que si l'écart est visible à l'\oe il. Un étudiant aurait tendance à conclure ``le test rejette donc le modèle est invalide'', conclusion trop sévère ici.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\subsection{Synthèse}
+%----------------------------------------------------------------------
+
+Les trois extensions présentées dans cette section couvrent les principaux cas pratiques au-delà de la régression simple :
+\begin{itemize}
+    \item Régression multiple sur \texttt{data5} : plusieurs prédicteurs quantitatifs, identification des variables actives, distinction entre corrélation marginale et effet net, réduction parcimonieuse.
+    \item Régression polynomiale sur \texttt{data4} : modélisation d'une relation non linéaire en restant dans le cadre linéaire (en les paramètres), choix du degré par tests emboîtés, complémentarité avec l'approche par morceaux de la section précédente.
+    \item ANOVA sur \texttt{data7} : intégration de variables explicatives qualitatives, ANOVA à un et deux facteurs avec interaction, vérification des hypothèses et conclusion d'absence d'effet sur ce jeu.
+\end{itemize}
+
+L'apport principal de l'IA, transverse aux trois sous-sections, consiste à formaliser des décisions qu'un étudiant prendrait visuellement ou intuitivement (choix du degré polynomial, retrait de variables, conclusion sur la normalité) en les transformant en procédures statistiques justifiables (test F emboîté, AIC, post-hoc de Tukey, interprétation conditionnelle des tests selon $n$).
 
 \newpage
 %======================================================================
