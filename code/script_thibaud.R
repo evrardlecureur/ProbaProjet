@@ -1,223 +1,172 @@
-# =============================================================
-# Projet Régression linéaire - Polytech Nice Sophia MAM3
-# Partie : Thibaud
-#   1) Régression multiple        (data5)
-#   2) Régression polynomiale     (data4)
-#   3) Analyse de la variance     (data7)
-# =============================================================
+# Régression multiple, polynomiale et ANOVA
+# Datasets E (data5), D (data4), G (data7)
+# Packages : car, lmtest ajoutés par l'IA
 
-rm(list = ls())
-graphics.off()
 
-base_dir <- "C:/Users/thiba/OneDrive/Bureau/Projet régression linéaire"
-data_dir <- file.path(base_dir, "data_extracted")
-fig_dir  <- file.path(base_dir, "figures")
-out_dir  <- file.path(base_dir, "sorties")
+# ----- Régression multiple (data5 = E) -----
 
-# Redirection des sorties texte
-sink(file.path(out_dir, "resultats_thibaud.txt"), split = TRUE)
+## partie étudiant
 
-# =============================================================
-# 1) REGRESSION MULTIPLE - data5
-# =============================================================
-cat("\n############################################################\n")
-cat("# 1) Régression linéaire multiple - data5\n")
-cat("############################################################\n\n")
+modele_E <- lm(Y ~ X1 + X2 + X3 + X4 + X5, data = E)
+summary(modele_E)
 
-load(file.path(data_dir, "data5.RData"))  # data.frame nommé E
-dM <- E
-cat("Dimensions :", dim(dM), "\n")
-cat("Résumé :\n"); print(summary(dM))
+pairs(E, pch = 16, cex = 0.4, main = "data5")
 
-# Matrice de corrélation
-cat("\nMatrice de corrélation :\n")
-print(round(cor(dM), 3))
+# matrice de corrélation
+round(cor(E), 3)
 
-png(file.path(fig_dir, "mult_pairs.png"), width = 900, height = 900)
-pairs(dM, main = "Nuages de points - data5", pch = 20, cex = 0.4)
-dev.off()
-
-# Modèle complet
-mod_full <- lm(Y ~ X1 + X2 + X3 + X4 + X5, data = dM)
-cat("\n--- Modèle complet ---\n")
-print(summary(mod_full))
-
-# Intervalles de confiance des coefficients
-cat("\nIntervalles de confiance à 95% des coefficients :\n")
-print(confint(mod_full))
-
-# ANOVA séquentielle
-cat("\nTable d'ANOVA (séquentielle) :\n")
-print(anova(mod_full))
-
-# Diagnostic des résidus
-png(file.path(fig_dir, "mult_diag.png"), width = 900, height = 700)
-par(mfrow = c(2, 2)); plot(mod_full); par(mfrow = c(1, 1))
-dev.off()
-
-# Test de normalité des résidus studentisés (Kolmogorov-Smirnov)
-rt_full <- rstudent(mod_full)
-ks_full <- ks.test(rt_full, "pt", df = nrow(dM) - length(coef(mod_full)) - 1)
-cat("\nTest de Kolmogorov-Smirnov sur les résidus studentisés :\n")
-print(ks_full)
-
-# Sélection manuelle par retrait des variables non significatives
-# (la variable la moins significative est retirée si p-valeur > 0.05)
-cat("\n--- Réduction du modèle (retrait des variables non significatives) ---\n")
-mod_red <- step(mod_full, direction = "backward", trace = 0)
-cat("Modèle retenu par step (AIC) :\n")
-print(summary(mod_red))
-
-# Comparaison des deux modèles
-cat("\nComparaison modèle complet vs réduit (test F) :\n")
-print(anova(mod_red, mod_full))
-
-# =============================================================
-# 2) REGRESSION POLYNOMIALE - data4
-# =============================================================
-cat("\n############################################################\n")
-cat("# 2) Régression polynomiale - data4\n")
-cat("############################################################\n\n")
-
-load(file.path(data_dir, "data4.RData"))  # data.frame D
-dP <- D
-cat("Dimensions :", dim(dP), "\n")
-cat("Corrélations : cor(X,Y) =", cor(dP$X, dP$Y),
-    " cor(X^2,Y) =", cor(dP$X^2, dP$Y), "\n")
-
-# Visualisation initiale
-png(file.path(fig_dir, "poly_scatter.png"), width = 800, height = 600)
-plot(dP$X, dP$Y, pch = 20, cex = 0.5, col = "grey40",
-     xlab = "X", ylab = "Y", main = "data4 : nuage de points")
-dev.off()
-
-# Modèle linéaire simple (comparaison)
-mod_lin <- lm(Y ~ X, data = dP)
-cat("\n--- Modèle linéaire simple (Y ~ X) ---\n")
-print(summary(mod_lin))
-
-# Modèles polynomiaux de degrés croissants
-for (deg in 2:4) {
-  cat("\n--- Modèle polynomial degré", deg, "---\n")
-  m <- lm(Y ~ poly(X, degree = deg, raw = TRUE), data = dP)
-  print(summary(m))
-}
-
-# Modèle polynomial de degré 2 retenu
-mod_poly <- lm(Y ~ poly(X, 2, raw = TRUE), data = dP)
-
-# Comparaison linéaire vs polynomial (test F via anova emboîtée)
-cat("\nTest F : Y ~ X  vs  Y ~ X + X^2\n")
-print(anova(mod_lin, mod_poly))
-
-# Tracé du modèle polynomial
-xseq <- seq(min(dP$X), max(dP$X), length.out = 300)
-yhat <- predict(mod_poly, newdata = data.frame(X = xseq),
-                interval = "prediction", level = 0.95)
-
-png(file.path(fig_dir, "poly_fit.png"), width = 800, height = 600)
-plot(dP$X, dP$Y, pch = 20, cex = 0.5, col = "grey40",
-     xlab = "X", ylab = "Y",
-     main = "Régression polynomiale degré 2 (data4)")
-lines(xseq, yhat[, "fit"], col = "red", lwd = 2)
-lines(xseq, yhat[, "lwr"], col = "blue", lty = 2)
-lines(xseq, yhat[, "upr"], col = "blue", lty = 2)
-abline(mod_lin, col = "darkgreen", lwd = 1.5, lty = 3)
-legend("topleft", c("Polynomial deg. 2", "IC prédiction 95%", "Modèle linéaire"),
-       col = c("red", "blue", "darkgreen"), lty = c(1, 2, 3), bty = "n")
-dev.off()
-
-# Diagnostic
-png(file.path(fig_dir, "poly_diag.png"), width = 900, height = 700)
-par(mfrow = c(2, 2)); plot(mod_poly); par(mfrow = c(1, 1))
-dev.off()
-
-# Normalité des résidus
-rt_poly <- rstudent(mod_poly)
-ks_poly <- ks.test(rt_poly, "pt", df = nrow(dP) - 3 - 1)
-cat("\nTest de Kolmogorov-Smirnov sur les résidus studentisés :\n")
-print(ks_poly)
-
-# =============================================================
-# 3) ANALYSE DE LA VARIANCE - data7
-# =============================================================
-cat("\n############################################################\n")
-cat("# 3) ANOVA - data7\n")
-cat("############################################################\n\n")
-
-load(file.path(data_dir, "data7.RData"))  # data.frame G
-dA <- G
-cat("Dimensions :", dim(dA), "\n")
-
-# On utilise X6 (binaire, 0/1) comme facteur principal.
-# X7 (entier, 1-15) regroupé en 3 classes pour servir de second facteur.
-dA$F1 <- factor(dA$X6, labels = c("groupe0", "groupe1"))
-dA$F2 <- cut(dA$X7,
-             breaks = c(-Inf, 6, 9, Inf),
-             labels = c("bas", "moyen", "haut"))
-
-cat("Effectifs par facteur F1 :\n"); print(table(dA$F1))
-cat("Effectifs par facteur F2 :\n"); print(table(dA$F2))
-cat("Croisement F1 x F2 :\n");       print(table(dA$F1, dA$F2))
-
-# Statistiques descriptives
-cat("\nMoyennes de Y par F1 :\n"); print(tapply(dA$Y, dA$F1, mean))
-cat("Moyennes de Y par F2 :\n"); print(tapply(dA$Y, dA$F2, mean))
-
-# Visualisation
-png(file.path(fig_dir, "anova_boxplots.png"), width = 1000, height = 500)
-par(mfrow = c(1, 2))
-boxplot(Y ~ F1, data = dA, main = "Y selon F1 (X6)", col = "lightblue")
-boxplot(Y ~ F2, data = dA, main = "Y selon F2 (X7 regroupé)", col = "lightgreen")
+# diagnostic
+par(mfrow = c(2, 2))
+plot(modele_E)
 par(mfrow = c(1, 1))
-dev.off()
 
-png(file.path(fig_dir, "anova_interaction.png"), width = 800, height = 600)
-interaction.plot(dA$F2, dA$F1, dA$Y,
+# normalité des résidus studentisés contre T(n-p-1)
+n_E <- nrow(E)
+ks.test(rstudent(modele_E), "pt", df = n_E - 6)
+
+# intervalles de confiance des coefficients
+confint(modele_E)
+
+# X2 n'est pas significative : on la retire
+modele_E2 <- lm(Y ~ X1 + X3 + X4 + X5, data = E)
+summary(modele_E2)
+
+# comparaison par test F emboîté
+anova(modele_E2, modele_E)
+# pas de différence significative => on garde le modèle réduit
+
+
+## partie IA
+
+# sélection backward automatique par AIC
+modele_E_step <- step(modele_E, direction = "backward", trace = 0)
+summary(modele_E_step)
+
+# multicolinéarité (VIF)
+library(car)
+vif(modele_E)
+# VIF proches de 1 => pas de problème
+
+# test formel d'homoscédasticité
+library(lmtest)
+bptest(modele_E)
+
+
+# ----- Régression polynomiale (data4 = D) -----
+
+## partie étudiant
+
+# tentative d'un modèle linéaire simple
+modele_lin <- lm(Y ~ X, data = D)
+summary(modele_lin)
+
+# la corrélation entre X^2 et Y est plus forte que celle entre X et Y
+cat("cor(X,Y) =", cor(D$X, D$Y),
+    "| cor(X^2,Y) =", cor(D$X^2, D$Y), "\n")
+
+# modèle quadratique
+modele_poly2 <- lm(Y ~ X + I(X^2), data = D)
+summary(modele_poly2)
+
+# tracé : nuage + droite linéaire + parabole + IC prédiction 95%
+x_seq <- seq(min(D$X), max(D$X), length.out = 300)
+y_hat <- predict(modele_poly2, newdata = data.frame(X = x_seq),
+                 interval = "prediction", level = 0.95)
+
+plot(D$X, D$Y, pch = 16, cex = 0.5,
+     main = "D - régression polynomiale degré 2")
+lines(x_seq, y_hat[, "fit"], col = "red", lwd = 2)
+lines(x_seq, y_hat[, "lwr"], col = "blue", lty = 2)
+lines(x_seq, y_hat[, "upr"], col = "blue", lty = 2)
+abline(modele_lin, col = "darkgreen", lwd = 2, lty = 3)
+legend("topleft", c("polynomial deg.2", "IC prédiction 95%", "linéaire"),
+       col = c("red", "blue", "darkgreen"), lty = c(1, 2, 3))
+
+# test F : le terme X^2 apporte-t-il vraiment quelque chose ?
+anova(modele_lin, modele_poly2)
+
+# diagnostic
+par(mfrow = c(2, 2))
+plot(modele_poly2)
+par(mfrow = c(1, 1))
+
+ks.test(rstudent(modele_poly2), "pt", df = nrow(D) - 4)
+
+cat("R² linéaire :", summary(modele_lin)$r.squared,
+    "| R² deg.2 :", summary(modele_poly2)$r.squared, "\n")
+
+
+## partie IA
+
+# comparaison automatique des degrés 2, 3, 4
+modele_poly3 <- lm(Y ~ poly(X, 3, raw = TRUE), data = D)
+modele_poly4 <- lm(Y ~ poly(X, 4, raw = TRUE), data = D)
+
+cat("AIC deg.2 :", AIC(modele_poly2),
+    "| deg.3 :", AIC(modele_poly3),
+    "| deg.4 :", AIC(modele_poly4), "\n")
+
+anova(modele_poly2, modele_poly3, modele_poly4)
+
+# poly() en base orthogonale (plus stable numériquement aux degrés élevés)
+modele_poly_orth <- lm(Y ~ poly(X, 3), data = D)
+summary(modele_poly_orth)
+
+
+# ----- ANOVA (data7 = G) -----
+
+## partie étudiant
+
+# X6 binaire et X7 entier 1-15 traités comme facteurs
+G$F1 <- factor(G$X6, labels = c("groupe0", "groupe1"))
+G$F2 <- cut(G$X7, breaks = c(-Inf, 6, 9, Inf),
+            labels = c("bas", "moyen", "haut"))
+
+table(G$F1, G$F2)
+tapply(G$Y, G$F1, mean)
+tapply(G$Y, G$F2, mean)
+
+# visualisation
+par(mfrow = c(1, 2))
+boxplot(Y ~ F1, data = G, col = "lightblue",  main = "Y par F1")
+boxplot(Y ~ F2, data = G, col = "lightgreen", main = "Y par F2")
+par(mfrow = c(1, 1))
+
+# ANOVA à 1 facteur
+aov_F1 <- aov(Y ~ F1, data = G)
+summary(aov_F1)
+
+aov_F2 <- aov(Y ~ F2, data = G)
+summary(aov_F2)
+
+# ANOVA à 2 facteurs avec interaction
+aov_2f <- aov(Y ~ F1 * F2, data = G)
+summary(aov_2f)
+
+interaction.plot(G$F2, G$F1, G$Y,
                  xlab = "F2", ylab = "Y moyenne", trace.label = "F1",
                  col = c("red", "blue"), lwd = 2,
-                 main = "Diagramme d'interaction F1 x F2")
-dev.off()
+                 main = "interaction F1 x F2")
 
-# ANOVA à un facteur
-cat("\n--- ANOVA à 1 facteur : Y ~ F1 ---\n")
-aov1 <- aov(Y ~ F1, data = dA)
-print(summary(aov1))
+# homoscédasticité (Bartlett)
+bartlett.test(Y ~ F1, data = G)
+bartlett.test(Y ~ F2, data = G)
 
-cat("\n--- ANOVA à 1 facteur : Y ~ F2 ---\n")
-aov1b <- aov(Y ~ F2, data = dA)
-print(summary(aov1b))
+# normalité des résidus
+qqnorm(rstudent(aov_2f), main = "ANOVA - QQ-plot")
+qqline(rstudent(aov_2f), col = "red")
 
-# ANOVA à deux facteurs avec interaction
-cat("\n--- ANOVA à 2 facteurs avec interaction : Y ~ F1 * F2 ---\n")
-aov2 <- aov(Y ~ F1 * F2, data = dA)
-print(summary(aov2))
 
-# Test post-hoc de Tukey
-cat("\n--- Comparaisons multiples de Tukey ---\n")
-print(TukeyHSD(aov2, which = "F2"))
+## partie IA
 
-# Vérification des hypothèses de l'ANOVA
-# Homoscédasticité (Bartlett)
-cat("\nTest de Bartlett (homoscédasticité) sur F1 :\n")
-print(bartlett.test(Y ~ F1, data = dA))
-cat("\nTest de Bartlett sur F2 :\n")
-print(bartlett.test(Y ~ F2, data = dA))
+# post-hoc de Tukey : quelles modalités diffèrent réellement ?
+TukeyHSD(aov_2f, which = "F2")
 
-# Normalité des résidus (KS sur résidus studentisés)
-rt_aov <- rstudent(lm(Y ~ F1 * F2, data = dA))
-ks_aov <- ks.test(rt_aov, "pnorm")
-cat("\nTest KS sur résidus studentisés de l'ANOVA (vs N(0,1)) :\n")
-print(ks_aov)
+# alternative : garder X7 quantitative plutôt que la découper en classes
+# (le découpage fait perdre de l'information)
+modele_X7_quanti <- lm(Y ~ X6 + X7, data = G)
+summary(modele_X7_quanti)
 
-png(file.path(fig_dir, "anova_diag.png"), width = 900, height = 700)
-par(mfrow = c(2, 2)); plot(aov2); par(mfrow = c(1, 1))
-dev.off()
-
-cat("\n############################################################\n")
-cat("# Fin du script\n")
-cat("############################################################\n")
-
-sink()
-cat("Script terminé. Sorties dans :", out_dir, "\n")
-cat("Figures dans :", fig_dir, "\n")
+# test de Levene : plus robuste que Bartlett à la non-normalité
+leveneTest(Y ~ F1, data = G)
+leveneTest(Y ~ F2, data = G)
