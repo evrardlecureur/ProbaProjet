@@ -11,6 +11,7 @@
 \usepackage{float}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{multirow}
 
 \geometry{margin=2.5cm}
 
@@ -468,7 +469,180 @@ Les quatre datasets illustrent quatre situations pratiques rencontrées en régr
 \section{Sélection de variables}
 %======================================================================
 
-% [texte à rédiger par Evrard]
+Cette section traite la sélection de variables explicatives dans un modèle de régression linéaire multiple. Trois jeux de données sont analysés : \texttt{data5} (objet \texttt{E}), \texttt{data6} (objet \texttt{F}) et \texttt{data7} (objet \texttt{G}), chacun contenant $p = 5$ variables explicatives $X_1, \dots, X_5$ et une variable réponse $Y$. Le code R complet correspondant se trouve dans \texttt{code/script\_evrard.R}.
+
+%----------------------------------------------------------------------
+\subsection{Cadre théorique}
+%----------------------------------------------------------------------
+
+En régression linéaire multiple avec $p$ prédicteurs, le modèle complet s'écrit
+\[
+Y_i = \beta_0 + \beta_1 X_{i,1} + \cdots + \beta_p X_{i,p} + U_i.
+\]
+Lorsque $p$ est grand, tous les prédicteurs ne sont pas nécessairement utiles. La sélection de variables vise à identifier le sous-modèle le plus parcimonieux tout en conservant une capacité explicative satisfaisante. Deux outils clés guident cette sélection :
+
+\begin{itemize}
+    \item Le \textbf{$R^2$ ajusté} ($R^2_a$), qui pénalise l'ajout de variables non informatives :
+    \[
+    R^2_a = 1 - \frac{(1 - R^2)(n - 1)}{n - p - 1}.
+    \]
+    \item Le critère \textbf{AIC} (Akaike Information Criterion), qui équilibre ajustement et parcimonie :
+    \[
+    \mathrm{AIC} = -2 \log L + 2(p + 1),
+    \]
+    où $L$ est la vraisemblance du modèle. Un AIC plus bas indique un meilleur modèle.
+\end{itemize}
+
+Trois stratégies de sélection sont considérées :
+\begin{enumerate}
+    \item \textbf{Méthode exhaustive} : on évalue tous les $2^p$ sous-modèles possibles et on retient celui qui maximise le $R^2_a$. Avec $p = 5$, cela donne $2^5 = 32$ modèles, ce qui est faisable.
+    \item \textbf{Sélection \emph{forward}} : on part du modèle vide et on ajoute itérativement la variable qui améliore le plus le critère choisi.
+    \item \textbf{Sélection \emph{backward}} : on part du modèle complet et on retire itérativement la variable la moins significative.
+\end{enumerate}
+
+%----------------------------------------------------------------------
+\subsection{Approche étudiant}
+%----------------------------------------------------------------------
+
+\subsubsection{Description des données}
+
+Les trois jeux de données partagent la même structure ($n$ observations, $5$ prédicteurs) mais présentent des profils de corrélation très différents avec $Y$ (tableau~\ref{tab:sel_cor}).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+& $X_1$ & $X_2$ & $X_3$ & $X_4$ & $X_5$ \\
+\midrule
+\texttt{data5} (E) & \textbf{1,000} & $-0{,}002$ & $0{,}036$ & $0{,}001$ & $0{,}016$ \\
+\texttt{data6} (F) & $0{,}281$ & $0{,}018$ & \textbf{0,973} & $-0{,}051$ & $0{,}074$ \\
+\texttt{data7} (G) & $0{,}040$ & $0{,}041$ & $0{,}015$ & $-0{,}011$ & \textbf{0,997} \\
+\bottomrule
+\end{tabular}
+\caption{Corrélations de Pearson entre chaque prédicteur et $Y$.}
+\label{tab:sel_cor}
+\end{table}
+
+Dans chaque cas, une variable domine : $X_1$ pour \texttt{data5}, $X_3$ pour \texttt{data6}, $X_5$ pour \texttt{data7}. La question est de savoir si les autres variables apportent quelque chose au modèle ou si la variable dominante suffit.
+
+\subsubsection{Sélection exhaustive}
+
+On ajuste les $2^5 = 32$ sous-modèles possibles et on calcule le $R^2_a$ pour chacun. Le tableau~\ref{tab:sel_exhaustive} résume le meilleur modèle par taille pour chaque dataset.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llcc}
+\toprule
+Dataset & Modèle & $R^2_a$ & AIC \\
+\midrule
+\multirow{5}{*}{\texttt{data5}} & $X_1$ & $0{,}99971$ & $1538{,}8$ \\
+& $X_1 + X_5$ & $0{,}99975$ & $1463{,}3$ \\
+& $X_1 + X_4 + X_5$ & $0{,}99975$ & $1462{,}7$ \\
+& $X_1 + X_3 + X_4 + X_5$ & $0{,}99975$ & $1461{,}8$ \\
+& $X_1 + X_2 + X_3 + X_4 + X_5$ & $0{,}99975$ & $1462{,}5$ \\
+\midrule
+\multirow{5}{*}{\texttt{data6}} & $X_3$ & $0{,}94632$ & $5589{,}1$ \\
+& $X_1 + X_3$ & $0{,}99786$ & $3978{,}3$ \\
+& $X_1 + X_3 + X_4$ & $0{,}99983$ & $2713{,}8$ \\
+& $X_1 + X_2 + X_3 + X_4$ & $0{,}99998$ & $1644{,}9$ \\
+& $X_1 + X_2 + X_3 + X_4 + X_5$ & $0{,}99999$ & $1422{,}4$ \\
+\midrule
+\multirow{5}{*}{\texttt{data7}} & $X_5$ & $0{,}99411$ & $23481{,}2$ \\
+& $X_1 + X_5$ & $0{,}99618$ & $21317{,}1$ \\
+& $X_1 + X_3 + X_5$ & $0{,}99618$ & $21317{,}2$ \\
+& $X_1 + X_2 + X_3 + X_5$ & $0{,}99618$ & $21318{,}0$ \\
+& $X_1 + X_2 + X_3 + X_4 + X_5$ & $0{,}99618$ & $21319{,}1$ \\
+\bottomrule
+\end{tabular}
+\caption{Meilleur sous-modèle par taille (exhaustive).}
+\label{tab:sel_exhaustive}
+\end{table}
+
+Sur les trois datasets, le $R^2_a$ augmente avec le nombre de variables mais l'AIC se stabilise vite. Sur \texttt{data5}, l'AIC minimum est atteint pour $p = 4$ ($X_1 + X_3 + X_4 + X_5$) et non pour le modèle complet. Sur \texttt{data7}, l'AIC minimum est atteint pour $p = 2$ ($X_1 + X_5$).
+
+\subsubsection{Sélection forward et backward}
+
+La sélection \emph{forward} part du modèle vide et ajoute la meilleure variable à chaque étape. La sélection \emph{backward} part du modèle complet et retire la moins significative à chaque étape.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\toprule
+Dataset & Forward & Backward \\
+\midrule
+\texttt{data5} (E) & $X_1 + X_5 + X_4 + X_3 + X_2$ (tout) & $X_1$ seul \\
+\texttt{data6} (F) & $X_3 + X_1 + X_4 + X_2 + X_5$ (tout) & $X_3$ seul \\
+\texttt{data7} (G) & $X_5 + X_1 + X_3 + X_2 + X_4$ (tout) & $X_5$ seul \\
+\bottomrule
+\end{tabular}
+\caption{Résultats de la sélection forward et backward.}
+\label{tab:sel_fwd_bwd}
+\end{table}
+
+Le forward garde \emph{toutes} les variables sur les trois datasets : à chaque étape, le $R^2_a$ augmente légèrement, donc la procédure n'a aucune raison de s'arrêter. Le backward, lui, retire agressivement les variables non significatives et ne garde que la variable dominante. Ce désaccord est la situation typique où l'intervention humaine (ou un critère automatique) est nécessaire pour trancher.
+
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Sélection automatique par \texttt{step()}.} L'IA utilise la fonction \texttt{step()} de R pour automatiser la sélection \emph{backward}, \emph{forward} et \emph{both} par critère AIC. Les résultats diffèrent du backward manuel (qui retire tout) car la fonction \texttt{step()} utilise l'AIC comme critère d'arrêt plutôt que le seuil de p-valeur.
+    
+    Sur \texttt{data5}, \texttt{step()} retient $X_1 + X_3 + X_4 + X_5$ (AIC $= 1461{,}8$) : il garde les variables dont l'ajout améliore l'AIC, même si leur p-valeur est marginale. Sur \texttt{data7}, il retient $X_1 + X_5$ (AIC $= 21317{,}1$).
+    
+    \item \textbf{Comparaison forward / backward / both.} Le tableau~\ref{tab:sel_step} résume les résultats de \texttt{step()} sur les trois datasets.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\toprule
+Dataset & Backward & Forward & Both \\
+\midrule
+\texttt{data5} & $X_1 + X_3 + X_4 + X_5$ & $X_1 + X_5 + X_4 + X_3$ & $X_1 + X_3 + X_4 + X_5$ \\
+\texttt{data6} & $X_1 + X_2 + X_3 + X_4 + X_5$ & $X_3 + X_1 + X_4 + X_2 + X_5$ & $X_1 + X_2 + X_3 + X_4 + X_5$ \\
+\texttt{data7} & $X_1 + X_5$ & $X_5 + X_1$ & $X_1 + X_5$ \\
+\bottomrule
+\end{tabular}
+\caption{Résultats de \texttt{step()} (backward, forward, both).}
+\label{tab:sel_step}
+\end{table}
+
+\begin{itemize}
+    \item \textbf{Multicolinéarité (VIF).} Sur \texttt{data5}, les VIF sont proches de $1$ : pas de problème de multicolinéarité. Les prédicteurs sont quasi orthogonaux, ce qui explique que $X_1$ absorbe presque toute la variabilité de $Y$.
+    
+    \item \textbf{Interprétation de l'effet net.} Sur les trois datasets, les variables secondaires ($X_2$, $X_3$, $X_4$ selon les cas) ont des corrélations marginales quasi nulles avec $Y$ mais deviennent parfois significatives dans le modèle multiple. Ce phénomène d'\emph{effet net} est identique à celui observé par Thibaud sur \texttt{data5} avec la variable $X_5$.
+    
+    \item \textbf{Diagnostics du modèle final.} Les tests de Kolmogorov-Smirnov sur les résidus studentisés du modèle réduit donnent des p-valeurs élevées ($0{,}999$ pour $X_1$ sur \texttt{data5}, $0{,}142$ pour $X_3$ sur \texttt{data6}, $0{,}257$ pour $X_5$ sur \texttt{data7}), confirmant la normalité des résidus.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/sel_r2a_taille.png}
+    \caption{$R^2_a$ du meilleur modèle en fonction du nombre de variables pour les trois datasets.}
+    \label{fig:sel_r2a_taille}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/sel_aic_taille.png}
+    \caption{AIC et BIC du meilleur modèle en fonction de la taille.}
+    \label{fig:sel_aic_taille}
+\end{figure}
+
+%----------------------------------------------------------------------
+\subsection{Synthèse}
+%----------------------------------------------------------------------
+
+Les trois datasets illustrent trois cas de figure de la sélection de variables :
+
+\begin{itemize}
+    \item \textbf{\texttt{data5} : une variable écrase tout.} $X_1$ a une corrélation quasi parfaite avec $Y$ ($r = 1$). Le backward ne garde que $X_1$ ; le forward garde tout ; \texttt{step()} retient $X_1 + X_3 + X_4 + X_5$. L'AIC suggère que les variables secondaires apportent une amélioration marginale mais réelle.
+    
+    \item \textbf{\texttt{data6} : toutes les variables sont utiles.} $X_3$ domine ($r = 0{,}97$) mais les autres variables ont des effets résiduels significatifs. Le backward ne garde que $X_3$ ; \texttt{step()} garde tout. C'est le cas où la sélection backward est trop agressive.
+    
+    \item \textbf{\texttt{data7} : compromis visible.} $X_5$ domine ($r = 0{,}997$). Le backward ne garde que $X_5$ ; \texttt{step()} retient $X_1 + X_5$. L'AIC minimum est atteint pour $p = 2$, ce qui valide le choix de deux variables.
+\end{itemize}
+
+L'apport principal de l'IA dans cette section est triple : (i)~l'automatisation de la sélection via \texttt{step()} fournit un critère d'arrêt basé sur l'AIC plutôt que sur un seuil de p-valeur arbitraire ; (ii)~la comparaison des trois méthodes (forward, backward, both) permet de jauger la stabilité du choix ; (iii)~l'analyse des VIF et des diagnostics formels objective des conclusions qu'un étudiant tirerait uniquement du tableau de régression.
 
 \newpage
 \section*{Conclusion}
