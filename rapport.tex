@@ -11,7 +11,6 @@
 \usepackage{float}
 \usepackage{listings}
 \usepackage{xcolor}
-\usepackage{multirow}
 
 \geometry{margin=2.5cm}
 
@@ -38,7 +37,7 @@
 \maketitle
 
 \section*{Introduction}
-Ce projet a pour objectif d'étudier en profondeur la régression linéaire à travers plusieurs jeux de données présentant chacun une difficulté particulière. La démarche adoptée consiste à traiter chaque problème une première fois par nos propres moyens (niveau bac+3), puis à comparer cette approche avec celle que l'on obtient en s'appuyant sur une IA. Le but n'est pas d'opposer les deux méthodes mais d'identifier précisément ce que l'IA apporte en plus d'un raisonnement statistique d'étudiant.
+L'objectif de ce projet est d'étudier la régression linéaire sur plusieurs jeux de données, chacun ayant sa difficulté propre. On a choisi de traiter chaque cas une première fois nous-mêmes, avec ce qu'on connaît du cours (niveau bac+3), puis de regarder ce qu'une IA proposait sur le même problème. L'idée n'est pas de dire qu'une méthode est meilleure que l'autre, mais de voir concrètement ce que l'IA apporte en plus de notre raisonnement.
 
 \tableofcontents
 
@@ -48,41 +47,36 @@ Ce projet a pour objectif d'étudier en profondeur la régression linéaire à t
 \section{Régression linéaire simple}
 %======================================================================
 
-Cette section traite quatre jeux de données ($A$, $B$, $C$, $D$) couvrant chacun un cas typique : situation idéale, présence d'outliers, petit échantillon, et relation non-linéaire. Pour chaque dataset, on présente d'abord la démarche étudiant puis ce que l'IA apporte en complément.
+On traite ici quatre jeux de données ($A$, $B$, $C$, $D$). Chacun correspond à une situation différente : un cas qui marche bien, un cas avec des points aberrants, un petit échantillon, et une relation qui n'est pas une droite. Pour chaque jeu, on donne d'abord notre démarche puis ce que l'IA ajoute.
 
 %----------------------------------------------------------------------
-\subsection{Cadre théorique}
+\subsection{Rappels}
 %----------------------------------------------------------------------
 
 Le modèle de régression linéaire simple s'écrit
 \[
 Y_i = a X_i + b + U_i, \qquad i = 1, \dots, n,
 \]
-où les $U_i$ sont supposés indépendants, de loi $\mathcal{N}(0, \sigma^2)$. Les estimateurs des moindres carrés ordinaires (MCO) sont
+avec les $U_i$ indépendants et de loi $\mathcal{N}(0, \sigma^2)$. Les estimateurs des moindres carrés sont
 \[
-\hat{a} = \frac{\sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y})}{\sum_{i=1}^n (X_i - \bar{X})^2}, \qquad \hat{b} = \bar{Y} - \hat{a}\bar{X}.
+\hat{a} = \frac{\sum_{i} (X_i - \bar{X})(Y_i - \bar{Y})}{\sum_{i} (X_i - \bar{X})^2}, \qquad \hat{b} = \bar{Y} - \hat{a}\bar{X}.
 \]
-Sous les hypothèses du modèle, $\hat{a}$ suit une loi normale et la statistique
-\[
-T = \frac{\hat{a}}{\widehat{\mathrm{SE}}(\hat{a})}
-\]
-suit une loi de Student à $n-2$ degrés de liberté sous $H_0 : a = 0$. La validation du modèle repose sur l'analyse des résidus studentisés, le QQ-plot de normalité, le test de Kolmogorov-Smirnov contre la loi $\mathcal{T}(n-3)$ et le graphique des résidus en fonction des valeurs ajustées.
+Sous les hypothèses du modèle, la statistique $T = \hat{a}/\widehat{\mathrm{SE}}(\hat{a})$ suit une loi de Student à $n-2$ degrés de liberté sous $H_0 : a = 0$. Pour vérifier que le modèle tient, on regarde les résidus studentisés (graphique résidus vs valeurs ajustées et QQ-plot), et on fait un test de Kolmogorov-Smirnov contre la loi $\mathcal{T}(n-3)$.
 
 %----------------------------------------------------------------------
 \subsection{Dataset A : cas idéal}
 %----------------------------------------------------------------------
 
-\subsubsection{Approche étudiant}
+\subsubsection{Notre démarche}
 
-On ajuste le modèle avec \texttt{lm()} et on lit la sortie de \texttt{summary()}. Le coefficient de détermination $R^2$ est très élevé, la pente $\hat{a}$ est très significativement non nulle (p-valeur $< 2 \cdot 10^{-16}$).
+On ajuste le modèle avec \texttt{lm()} et on regarde le \texttt{summary()}. Le $R^2$ est très proche de 1 et la p-valeur de la pente est inférieure à $2\cdot10^{-16}$, donc $\hat{a}$ est très significatif. Le nuage de points avec la droite (figure~\ref{fig:A_droite}) confirme que les points sont bien alignés.
 
 \begin{lstlisting}
 modele_A <- lm(Y ~ X, data = A)
 summary(modele_A)
-cat("R² =", summary(modele_A)$r.squared, "\n")
+plot(A$X, A$Y, main = "Dataset A")
+abline(modele_A, col = "red")
 \end{lstlisting}
-
-Le tracé du nuage de points avec la droite de régression montre un alignement net (figure~\ref{fig:A_droite}).
 
 \begin{figure}[H]
     \centering
@@ -91,15 +85,13 @@ Le tracé du nuage de points avec la droite de régression montre un alignement 
     \label{fig:A_droite}
 \end{figure}
 
-\paragraph{Diagnostic des résidus.} Le graphique des résidus studentisés en fonction des valeurs ajustées (figure~\ref{fig:A_residus}, gauche) ne présente aucun motif visible : les points se répartissent symétriquement autour de zéro, sans pattern en entonnoir, ce qui valide l'hypothèse d'homoscédasticité. Le QQ-plot (figure~\ref{fig:A_residus}, droite) suit la première bissectrice, indiquant la normalité des résidus.
+Pour vérifier les hypothèses, on trace les résidus studentisés en fonction des valeurs ajustées, puis le QQ-plot (figure~\ref{fig:A_residus}). Sur le premier graphe les points sont répartis autour de 0 sans forme particulière, donc la variance a l'air constante. Sur le QQ-plot ils suivent à peu près la droite, donc les résidus ont l'air de suivre une loi normale.
 
 \begin{lstlisting}
-plot(fitted(modele_A), rstudent(modele_A),
-     xlab = "ajustes", ylab = "residus stud.", main = "A - residus vs ajustes")
-abline(h = 0, col = "red", lty = 2)
-
-qqnorm(rstudent(modele_A), main = "A - QQ-plot")
-qqline(rstudent(modele_A), col = "red")
+plot(fitted(modele_A), rstudent(modele_A))
+abline(h = 0)
+qqnorm(rstudent(modele_A))
+qqline(rstudent(modele_A))
 \end{lstlisting}
 
 \begin{figure}[H]
@@ -107,29 +99,23 @@ qqline(rstudent(modele_A), col = "red")
     \includegraphics[width=0.48\textwidth]{figures/residuStudent-A.png}
     \hfill
     \includegraphics[width=0.48\textwidth]{figures/QQ-plotA.png}
-    \caption{Diagnostic des résidus du modèle ajusté sur le Dataset A.}
+    \caption{Résidus studentisés et QQ-plot, Dataset A.}
     \label{fig:A_residus}
 \end{figure}
 
-\paragraph{Test de Kolmogorov-Smirnov.} On teste la normalité des résidus studentisés contre la loi $\mathcal{T}(n-3)$ :
+On confirme avec un test de Kolmogorov-Smirnov des résidus contre une loi de Student à $n-3$ degrés de liberté :
 
 \begin{lstlisting}
 n_A <- nrow(A)
 ks.test(rstudent(modele_A), "pt", df = n_A - 3)
 \end{lstlisting}
 
-La p-valeur est largement supérieure à $0{,}05$ : on ne rejette pas l'hypothèse de normalité. Les quatre hypothèses du modèle sont validées.
-
-\paragraph{Test de Student.} On calcule manuellement
-\[
-\hat{\sigma} = \sqrt{\tfrac{1}{n-2} \sum_i \hat{U}_i^2}, \quad \widehat{\mathrm{SE}}(\hat{a}) = \frac{\hat{\sigma}}{\sqrt{\sum_i (X_i - \bar{X})^2}},
-\]
-puis $t_{\mathrm{obs}} = \hat{a}/\widehat{\mathrm{SE}}(\hat{a})$. La valeur observée dépasse très largement le seuil critique $t_{0{,}975,\, n-2}$ : on rejette $H_0$, la pente est significative.
+La p-valeur est bien au-dessus de 0,05, donc on ne rejette pas la normalité. Les hypothèses sont vérifiées, et le test de Student du \texttt{summary()} nous donne directement que la pente est significative.
 
 \subsubsection{Apport de l'IA}
 
 \begin{itemize}
-    \item \textbf{Vérification manuelle systématique.} L'IA propose de recalculer $\hat{a}$ et $\hat{b}$ directement à partir des formules du cours pour vérifier les sorties de \texttt{summary()}.
+    \item \textbf{Vérification des formules à la main.} L'IA recalcule $\hat{a}$ et $\hat{b}$ avec les formules du cours pour confirmer ce que renvoie \texttt{summary()}.
 
 \begin{lstlisting}
 x_bar <- mean(A$X); y_bar <- mean(A$Y)
@@ -138,15 +124,15 @@ b_chap <- y_bar - a_chap * x_bar
 cat("calcul manuel -> a =", a_chap, "| b =", b_chap, "\n")
 \end{lstlisting}
 
-    \item \textbf{Tests formels supplémentaires.} En plus des outils graphiques, l'IA propose le test de Breusch-Pagan pour l'homoscédasticité et le test de Shapiro-Wilk pour la normalité, objectivant des conclusions qu'un étudiant tirerait uniquement du QQ-plot.
+    \item \textbf{Tests formels en plus.} En complément des graphiques, l'IA ajoute le test de Breusch-Pagan (homoscédasticité) et le test de Shapiro-Wilk (normalité), ce qui donne une conclusion chiffrée et pas seulement visuelle.
 
 \begin{lstlisting}
 library(lmtest)
-bptest(modele_A)              # Breusch-Pagan : homoscedasticite
-shapiro.test(residuals(modele_A))  # Shapiro-Wilk : normalite
+bptest(modele_A)
+shapiro.test(residuals(modele_A))
 \end{lstlisting}
 
-    \item \textbf{Visualisation de la région de rejet.} Tracer la densité de Student avec la région de rejet remplie en rouge clarifie immédiatement la procédure du test (figure~\ref{fig:A_rejet}).
+    \item \textbf{Région de rejet du test.} L'IA trace la densité de Student avec la région de rejet remplie en rouge, ce qui rend la procédure du test plus parlante (figure~\ref{fig:A_rejet}).
 
 \begin{lstlisting}
 sigma_chap <- sqrt(sum(residuals(modele_A)^2) / (n_A - 2))
@@ -163,6 +149,12 @@ polygon(c(-5, xg, -seuil), c(0, dt(xg, n_A-2), 0), col = rgb(1,0,0,0.3), border 
 abline(v = c(-seuil, seuil), col = "red", lty = 2)
 \end{lstlisting}
 
+    \item \textbf{Intervalle de prédiction.} Enfin l'IA utilise \texttt{predict()} avec \texttt{interval = "prediction"} pour encadrer une nouvelle observation.
+
+\begin{lstlisting}
+predict(modele_A, newdata = data.frame(X = c(0, 50)), interval = "prediction")
+\end{lstlisting}
+
 \end{itemize}
 
 \begin{figure}[H]
@@ -172,69 +164,59 @@ abline(v = c(-seuil, seuil), col = "red", lty = 2)
     \label{fig:A_rejet}
 \end{figure}
 
-\begin{itemize}
-    \item \textbf{Intervalle de prédiction.} L'IA propose \texttt{predict()} avec \texttt{interval = "prediction"} pour obtenir l'encadrement d'une nouvelle observation, bouclant proprement la chaîne modèle-inférence-prédiction.
-
-\begin{lstlisting}
-predict(modele_A, newdata = data.frame(X = c(0, 50)), interval = "prediction")
-\end{lstlisting}
-
-\end{itemize}
-
 %----------------------------------------------------------------------
-\subsection{Dataset B : présence d'outliers}
+\subsection{Dataset B : points aberrants}
 %----------------------------------------------------------------------
 
-\subsubsection{Approche étudiant}
+\subsubsection{Notre démarche}
 
-L'ajustement direct produit un $R^2$ correct mais le graphique des résidus studentisés (figure~\ref{fig:B_residus}, gauche) fait apparaître plusieurs points avec $|\text{résidu}| > 3$. Le QQ-plot dévie nettement aux extrémités (figure~\ref{fig:B_residus}, droite) et le test KS rejette la normalité.
+Quand on ajuste le modèle, le $R^2$ est correct, mais le graphique des résidus studentisés (figure~\ref{fig:B_residus}, gauche) montre plusieurs points avec un résidu dont la valeur absolue dépasse 3. Le QQ-plot décroche aux extrémités (figure~\ref{fig:B_residus}, droite) et le test KS rejette la normalité. Il y a donc des points aberrants.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.48\textwidth]{figures/residuStudent-B.png}
     \hfill
     \includegraphics[width=0.48\textwidth]{figures/QQplot-B.png}
-    \caption{Diagnostic du modèle initial sur le Dataset B.}
+    \caption{Résidus et QQ-plot du modèle initial, Dataset B.}
     \label{fig:B_residus}
 \end{figure}
 
-\paragraph{Identification et retrait.} On identifie les outliers via le seuil $|\text{résidu studentisé}| > 3$, on les visualise sur le nuage (figure~\ref{fig:B_outliers}, gauche) puis on refit le modèle sur les données nettoyées (figure~\ref{fig:B_outliers}, droite).
+On repère ces points avec le critère $|\text{résidu studentisé}| > 3$, on les marque en rouge sur le nuage (figure~\ref{fig:B_outliers}, gauche), puis on refait la régression sans eux (figure~\ref{fig:B_outliers}, droite).
 
 \begin{lstlisting}
-n_B <- nrow(B)
 out <- which(abs(rstudent(modele_B)) > 3)
-cat("outliers detectes :", out, "\n")
+plot(B$X, B$Y, main = "outliers")
+points(B$X[out], B$Y[out], col = "red")
 
 B2 <- B[-out, ]
 modele_B2 <- lm(Y ~ X, data = B2)
-
-cat("pente avant :", coef(modele_B)[2],
-    "| apres :", coef(modele_B2)[2], "\n")
+coef(modele_B)[2]
+coef(modele_B2)[2]
 \end{lstlisting}
 
-Le QQ-plot et le test KS du modèle nettoyé sont alors satisfaisants. La différence de pente illustre la sensibilité de la MCO aux valeurs extrêmes.
+Après nettoyage, le QQ-plot et le test KS sont bons. La pente a changé entre les deux modèles, ce qui montre bien que les moindres carrés sont sensibles aux valeurs extrêmes.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.48\textwidth]{figures/nuagePointOutliersRouge-B.png}
     \hfill
     \includegraphics[width=0.48\textwidth]{figures/NuagePointB-nettoye.png}
-    \caption{Avant/après retrait des outliers, Dataset B.}
+    \caption{Points aberrants (en rouge) et modèle après retrait, Dataset B.}
     \label{fig:B_outliers}
 \end{figure}
 
 \subsubsection{Apport de l'IA}
 
 \begin{itemize}
-    \item \textbf{Distance de Cook.} L'IA introduit la distance de Cook pour distinguer les points \emph{aberrants} (résidu élevé) des points \emph{influents} (gros impact sur les coefficients). Un point peut être atypique sans être influent, et inversement.
+    \item \textbf{Distance de Cook.} L'IA introduit la distance de Cook pour faire la différence entre un point simplement aberrant (gros résidu) et un point influent (qui tire vraiment les coefficients). Les deux ne sont pas forcément les mêmes.
 
 \begin{lstlisting}
 cook_B <- cooks.distance(modele_B)
 plot(cook_B, type = "h", main = "B - distance de Cook")
-abline(h = 4 / n_B, col = "red", lty = 2)
+abline(h = 4 / nrow(B), col = "red", lty = 2)
 \end{lstlisting}
 
-    \item \textbf{Régression robuste.} Plutôt que de supprimer des observations, \texttt{rlm()} (package \texttt{MASS}) pondère automatiquement les points selon leur résidu (M-estimateurs), évitant la décision arbitraire de retrait.
+    \item \textbf{Régression robuste.} Au lieu de supprimer des points, \texttt{rlm()} (package \texttt{MASS}) leur donne automatiquement moins de poids selon leur résidu. On évite ainsi de décider à la main quels points enlever.
 
 \begin{lstlisting}
 library(MASS)
@@ -244,7 +226,7 @@ cat("MCO :", coef(modele_B)[2],
     "| sans outliers :", coef(modele_B2)[2], "\n")
 \end{lstlisting}
 
-    \item \textbf{Comparaison visuelle des trois approches} (figure~\ref{fig:B_IA}).
+    \item \textbf{Comparaison des trois pentes} sur le même graphique (figure~\ref{fig:B_IA}, droite).
 
 \end{itemize}
 
@@ -261,16 +243,14 @@ cat("MCO :", coef(modele_B)[2],
 \subsection{Dataset C : petit échantillon ($n = 50$)}
 %----------------------------------------------------------------------
 
-\subsubsection{Approche étudiant}
+\subsubsection{Notre démarche}
 
-Le modèle s'ajuste sans difficulté apparente et les hypothèses semblent satisfaites graphiquement (figure~\ref{fig:C_main}). Toutefois, la lecture du \texttt{summary()} met en évidence une erreur standard $\widehat{\mathrm{SE}}(\hat{a})$ nettement plus large que celle du Dataset A. La largeur de l'intervalle de confiance à 95\% sur la pente est environ $\sqrt{n_A / n_C} \approx 4{,}5$ fois plus grande, comme attendu d'après la décroissance en $1/\sqrt{n}$.
+Le modèle s'ajuste sans souci et les hypothèses ont l'air vérifiées sur les graphiques (figure~\ref{fig:C_main}). Par contre, en lisant le \texttt{summary()}, on voit que l'erreur standard de la pente est bien plus grande que pour le Dataset A. L'intervalle de confiance à 95\% est donc beaucoup plus large, ce qui est logique vu que la précision se dégrade en $1/\sqrt{n}$ et qu'on a ici beaucoup moins de points.
 
 \begin{lstlisting}
-n_C <- nrow(C)
-cat("SE(a) -> A :", summary(modele_A)$coefficients[2, 2],
-               "| C :", summary(modele_C)$coefficients[2, 2], "\n")
-cat("largeur IC95 -> A :", diff(confint(modele_A)[2, ]),
-                  "| C :", diff(confint(modele_C)[2, ]), "\n")
+modele_C <- lm(Y ~ X, data = C)
+summary(modele_C)$coefficients[2, 2]
+confint(modele_C)
 \end{lstlisting}
 
 \begin{figure}[H]
@@ -278,16 +258,16 @@ cat("largeur IC95 -> A :", diff(confint(modele_A)[2, ]),
     \includegraphics[width=0.48\textwidth]{figures/NuagePointC-DroiteRegression.png}
     \hfill
     \includegraphics[width=0.48\textwidth]{figures/ResiduStudent-C.png}
-    \caption{Ajustement et résidus pour le Dataset C ($n = 50$).}
+    \caption{Ajustement et résidus, Dataset C ($n = 50$).}
     \label{fig:C_main}
 \end{figure}
 
 \subsubsection{Apport de l'IA}
 
 \begin{itemize}
-    \item \textbf{Tests formels sur petit échantillon.} En petit $n$, les diagnostics graphiques sont peu fiables. L'IA insiste sur le test de Breusch-Pagan pour confirmer l'homoscédasticité au-delà du graphique.
+    \item \textbf{Tests formels.} En petit échantillon les graphiques sont peu fiables, donc l'IA s'appuie sur le test de Breusch-Pagan pour confirmer l'homoscédasticité.
 
-    \item \textbf{Erreurs standards robustes (sandwich).} En cas de doute sur l'homoscédasticité, \texttt{vcovHC()} fournit une matrice de variance robuste, raffinement standard en économétrie qu'un étudiant ne connaît pas en général.
+    \item \textbf{Erreurs standards robustes (sandwich).} En cas de doute, \texttt{vcovHC()} donne une variance robuste des coefficients. C'est un outil classique en économétrie qu'on ne voit pas en cours.
 
 \begin{lstlisting}
 library(lmtest); library(sandwich)
@@ -295,7 +275,7 @@ bptest(modele_C)
 coeftest(modele_C, vcov = vcovHC(modele_C, type = "HC1"))
 \end{lstlisting}
 
-    \item \textbf{Bootstrap pour l'intervalle de confiance.} Avec $n = 50$, l'IA propose un bootstrap par rééchantillonnage ($R = 2000$) pour un intervalle de confiance qui ne repose pas sur l'hypothèse de normalité asymptotique.
+    \item \textbf{Bootstrap pour l'intervalle de confiance.} Avec $n = 50$, l'IA propose un bootstrap ($R = 2000$ rééchantillonnages) pour un intervalle qui ne suppose pas la normalité.
 
 \begin{lstlisting}
 library(boot)
@@ -309,16 +289,18 @@ cat("IC bootstrap :", boot.ci(b_C, type = "perc", index = 2)$percent[4:5], "\n")
 \end{itemize}
 
 %----------------------------------------------------------------------
-\subsection{Dataset D : relation non-linéaire en V}
+\subsection{Dataset D : relation en V}
 %----------------------------------------------------------------------
 
-\subsubsection{Approche étudiant -- tentative directe}
+\subsubsection{Notre démarche : on essaie d'abord une droite}
 
-L'ajustement d'un modèle linéaire simple donne un $R^2$ très faible et le graphique des résidus présente un motif en V flagrant (figure~\ref{fig:D_simple}). Le test KS rejette la normalité. Le modèle linéaire est manifestement inadapté.
+On commence par ajuster une droite. Le $R^2$ est très faible et surtout le graphique des résidus fait un V net (figure~\ref{fig:D_simple}), ce qui veut dire qu'une droite ne convient pas du tout. Le test KS rejette la normalité.
 
 \begin{lstlisting}
 modele_D <- lm(Y ~ X, data = D)
-cat("R² =", summary(modele_D)$r.squared, "\n")
+summary(modele_D)
+plot(fitted(modele_D), rstudent(modele_D))
+abline(h = 0)
 ks.test(rstudent(modele_D), "pt", df = nrow(D) - 3)
 \end{lstlisting}
 
@@ -327,44 +309,43 @@ ks.test(rstudent(modele_D), "pt", df = nrow(D) - 3)
     \includegraphics[width=0.48\textwidth]{figures/NuagePointD-DroiteRegression.png}
     \hfill
     \includegraphics[width=0.48\textwidth]{figures/ResiduStudent-D.png}
-    \caption{Tentative d'ajustement linéaire direct sur le Dataset D.}
+    \caption{Ajustement linéaire direct, Dataset D.}
     \label{fig:D_simple}
 \end{figure}
 
-\subsubsection{Approche étudiant -- découpage en deux régressions}
+\subsubsection{Notre démarche : on coupe en deux}
 
-L'observation du nuage de points suggère un point de rupture autour de $X = 30$. On scinde le jeu de données en deux sous-ensembles et on ajuste deux régressions séparées. Les diagnostics deviennent satisfaisants sur chaque sous-modèle et les $R^2$ remontent à des valeurs très acceptables (figure~\ref{fig:D_split}).
+En regardant le nuage, on voit que la pente change autour de $X = 30$. On coupe donc le jeu de données en deux et on fait une droite de chaque côté. Les diagnostics redeviennent corrects et les deux $R^2$ remontent (figure~\ref{fig:D_split}).
 
 \begin{lstlisting}
-seuil_X <- 30
-D_g <- D[D$X <  seuil_X, ]
-D_d <- D[D$X >= seuil_X, ]
+D_g <- D[D$X < 30, ]
+D_d <- D[D$X >= 30, ]
 mod_g <- lm(Y ~ X, data = D_g)
 mod_d <- lm(Y ~ X, data = D_d)
-cat("R² gauche :", summary(mod_g)$r.squared,
-    "| R² droite :", summary(mod_d)$r.squared, "\n")
+plot(D$X, D$Y, main = "deux droites")
+abline(mod_g, col = "blue")
+abline(mod_d, col = "red")
 \end{lstlisting}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{figures/NuagePoint2droite-D.png}
-    \caption{Ajustement par morceaux du Dataset D, point de rupture fixé à $X = 30$.}
+    \caption{Deux droites séparées en $X = 30$, Dataset D.}
     \label{fig:D_split}
 \end{figure}
 
 \subsubsection{Apport de l'IA}
 
 \begin{itemize}
-    \item \textbf{Estimation automatique du point de rupture.} Le choix $X = 30$ est visuel et arbitraire. La régression segmentée (package \texttt{segmented}) estime le point de rupture $\hat{\psi}$ avec son erreur standard, transformant un choix \emph{ad hoc} en une véritable estimation statistique.
+    \item \textbf{Point de rupture estimé automatiquement.} Notre choix de $X = 30$ est fait à l'oeil. La régression segmentée (package \texttt{segmented}) estime le point de rupture $\hat{\psi}$ avec son erreur standard, donc le seuil devient une vraie estimation au lieu d'un choix arbitraire.
 
 \begin{lstlisting}
 library(segmented)
 modele_D_seg <- segmented(modele_D, seg.Z = ~X, psi = 30)
 cat("rupture estimee :", modele_D_seg$psi[, "Est."], "\n")
-cat("R² segmentee :", summary(modele_D_seg)$r.squared, "\n")
 \end{lstlisting}
 
-    \item \textbf{Modélisation par variable indicatrice.} L'IA propose aussi un seul \texttt{lm()} avec $Z = \max(X - 30, 0)$, cas particulier de régression multiple qui unifie le traitement.
+    \item \textbf{Modèle par morceaux en un seul \texttt{lm()}.} L'IA réécrit le tout avec une variable $Z = \max(X - 30, 0)$, ce qui est un cas particulier de régression multiple.
 
 \begin{lstlisting}
 D$Z <- pmax(D$X - 30, 0)
@@ -372,28 +353,22 @@ mod_pcw <- lm(Y ~ X + Z, data = D)
 summary(mod_pcw)
 \end{lstlisting}
 
-    \item \textbf{Comparaison de $R^2$} entre les trois modèles : simple ($R^2 \approx 0$), par morceaux, et segmenté (figure~\ref{fig:D_seg}).
+    \item \textbf{Comparaison des $R^2$} entre le modèle simple (proche de 0) et le modèle segmenté (figure~\ref{fig:D_seg}).
 
 \end{itemize}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{figures/RegressionSegmente-D.png}
-    \caption{Régression segmentée sur le Dataset D, point de rupture estimé automatiquement.}
+    \caption{Régression segmentée, Dataset D.}
     \label{fig:D_seg}
 \end{figure}
 
 %----------------------------------------------------------------------
-\subsection{Synthèse}
+\subsection{Bilan de la section}
 %----------------------------------------------------------------------
 
-Les quatre datasets illustrent quatre situations pratiques rencontrées en régression simple :
-\begin{itemize}
-    \item Dataset A : tout fonctionne, on valide la chaîne complète (ajustement, test, résidus, prédiction).
-    \item Dataset B : la MCO est sensible aux outliers. L'approche étudiant consiste à les retirer ; l'IA propose des méthodes plus robustes (rlm, distance de Cook).
-    \item Dataset C : la précision des estimateurs se dégrade en $1/\sqrt{n}$. L'IA propose des outils adaptés au petit $n$ (bootstrap, erreurs standards robustes).
-    \item Dataset D : le modèle linéaire est inadapté pour une relation en V. Le découpage manuel fonctionne mais l'IA introduit la régression segmentée qui formalise et automatise la démarche.
-\end{itemize}
+Les quatre jeux correspondent à quatre situations classiques. Pour $A$ tout marche et on déroule la chaîne complète (ajustement, test, résidus, prédiction). Pour $B$ les moindres carrés sont sensibles aux points aberrants : on les enlève à la main, l'IA propose des méthodes plus robustes (rlm, distance de Cook). Pour $C$ la précision se dégrade avec le petit échantillon, et l'IA apporte des outils adaptés (bootstrap, erreurs robustes). Pour $D$ la droite ne convient pas : notre découpage manuel fonctionne mais l'IA le formalise avec la régression segmentée.
 
 \newpage
 %======================================================================
@@ -404,248 +379,298 @@ Les quatre datasets illustrent quatre situations pratiques rencontrées en régr
 \subsection{Régression multiple}
 %----------------------------------------------------------------------
 
-% [texte à rédiger par Thibaud]
+On travaille sur le jeu $E$ qui a cinq variables explicatives $X_1, \dots, X_5$. Le modèle s'écrit sous forme matricielle $Y = X\beta + U$, et l'estimateur des moindres carrés est $\hat{\beta} = (X'X)^{-1}X'Y$. On juge le modèle avec le $R^2$ ajusté (qui pénalise le nombre de variables), le test de Fisher global (au moins une variable utile ?) et les tests de Student sur chaque coefficient.
+
+\subsubsection{Notre démarche}
+
+On ajuste le modèle complet et on lit le \texttt{summary()}. Le test de Fisher global est très significatif, donc le modèle apporte quelque chose. En regardant les p-valeurs une par une, on remarque que $X_2$ a une p-valeur trop grande. On regarde aussi \texttt{pairs()} et la matrice de corrélation pour voir les liens entre variables (figure~\ref{fig:mult_pairs}).
+
+\begin{lstlisting}
+modele_E <- lm(Y ~ X1 + X2 + X3 + X4 + X5, data = E)
+summary(modele_E)
+pairs(E)
+cor(E)
+\end{lstlisting}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{figures/mult_pairs.png}
-    \caption{Matrice des nuages de points -- régression multiple.}
+    \caption{Matrice des nuages de points entre les variables de $E$.}
     \label{fig:mult_pairs}
 \end{figure}
 
+Comme $X_2$ n'est pas significative, on l'enlève et on compare les deux modèles avec un test de Fisher (\texttt{anova}). La p-valeur est grande, donc on ne perd rien à retirer $X_2$ : on garde le modèle réduit. On vérifie enfin les résidus avec les graphiques de diagnostic (figure~\ref{fig:mult_diag}).
+
+\begin{lstlisting}
+modele_E2 <- lm(Y ~ X1 + X3 + X4 + X5, data = E)
+anova(modele_E2, modele_E)
+
+par(mfrow = c(2, 2))
+plot(modele_E)
+par(mfrow = c(1, 1))
+\end{lstlisting}
+
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{figures/mult_diag.png}
-    \caption{Diagnostics des résidus -- régression multiple.}
+    \includegraphics[width=0.8\textwidth]{figures/mult_diag.png}
+    \caption{Diagnostics des résidus, régression multiple sur $E$.}
     \label{fig:mult_diag}
 \end{figure}
+
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Sélection automatique.} L'IA fait directement une sélection backward par AIC avec \texttt{step()}, ce qui retrouve le même modèle sans avoir à retirer les variables une par une à la main.
+
+\begin{lstlisting}
+modele_E_step <- step(modele_E, direction = "backward", trace = 0)
+summary(modele_E_step)
+\end{lstlisting}
+
+    \item \textbf{Multicolinéarité (VIF).} L'IA calcule les VIF pour vérifier que les variables ne sont pas trop corrélées entre elles. Ici ils sont proches de 1, donc pas de problème.
+
+\begin{lstlisting}
+library(car)
+vif(modele_E)
+\end{lstlisting}
+
+    \item \textbf{Test d'homoscédasticité.} En plus du graphique, l'IA confirme avec un test de Breusch-Pagan.
+
+\begin{lstlisting}
+library(lmtest)
+bptest(modele_E)
+\end{lstlisting}
+
+\end{itemize}
 
 %----------------------------------------------------------------------
 \subsection{Régression polynomiale}
 %----------------------------------------------------------------------
 
-% [texte à rédiger par Thibaud]
+On utilise le jeu $D$. L'idée est qu'un modèle polynomial du type $Y = a X^2 + b X + c$ reste une régression multiple : il suffit de prendre $X$ et $X^2$ comme variables explicatives.
+
+\subsubsection{Notre démarche}
+
+On essaie d'abord une droite, qui marche mal. En comparant les corrélations, on voit que $Y$ est bien plus corrélé à $X^2$ qu'à $X$, donc on passe à un modèle quadratique. On trace la parabole sur le nuage (figure~\ref{fig:poly_main}).
+
+\begin{lstlisting}
+modele_lin   <- lm(Y ~ X, data = D)
+cor(D$X, D$Y)
+cor(D$X^2, D$Y)
+
+modele_poly2 <- lm(Y ~ X + I(X^2), data = D)
+plot(D$X, D$Y, main = "data4")
+x_seq <- seq(min(D$X), max(D$X), length.out = 100)
+lines(x_seq, predict(modele_poly2, data.frame(X = x_seq)), col = "red")
+\end{lstlisting}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.48\textwidth]{figures/poly_scatter.png}
     \hfill
     \includegraphics[width=0.48\textwidth]{figures/poly_fit.png}
-    \caption{Nuage de points et ajustement polynomial.}
+    \caption{Nuage de points et ajustement quadratique, jeu $D$.}
     \label{fig:poly_main}
 \end{figure}
 
+On vérifie que le terme $X^2$ sert vraiment avec un test de Fisher entre le modèle linéaire et le modèle quadratique : la p-valeur est minuscule, donc $X^2$ est utile. Le $R^2$ passe d'une valeur faible à une valeur élevée, et les résidus sont bons (figure~\ref{fig:poly_diag}).
+
+\begin{lstlisting}
+anova(modele_lin, modele_poly2)
+summary(modele_lin)$r.squared
+summary(modele_poly2)$r.squared
+
+par(mfrow = c(2, 2))
+plot(modele_poly2)
+par(mfrow = c(1, 1))
+\end{lstlisting}
+
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{figures/poly_diag.png}
-    \caption{Diagnostics des résidus -- régression polynomiale.}
+    \includegraphics[width=0.8\textwidth]{figures/poly_diag.png}
+    \caption{Diagnostics des résidus, modèle quadratique.}
     \label{fig:poly_diag}
 \end{figure}
 
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Choix du degré.} L'IA teste aussi les degrés 3 et 4 et les compare par AIC et par test de Fisher emboîté, pour vérifier qu'on ne gagne rien à monter plus haut que 2.
+
+\begin{lstlisting}
+modele_poly3 <- lm(Y ~ poly(X, 3, raw = TRUE), data = D)
+modele_poly4 <- lm(Y ~ poly(X, 4, raw = TRUE), data = D)
+cat("AIC deg.2 :", AIC(modele_poly2),
+    "| deg.3 :", AIC(modele_poly3),
+    "| deg.4 :", AIC(modele_poly4), "\n")
+anova(modele_poly2, modele_poly3, modele_poly4)
+\end{lstlisting}
+
+    \item \textbf{Base orthogonale.} Pour les degrés élevés, l'IA utilise \texttt{poly(X, 3)} (base orthogonale) qui est plus stable numériquement que les puissances brutes.
+
+\begin{lstlisting}
+modele_poly_orth <- lm(Y ~ poly(X, 3), data = D)
+summary(modele_poly_orth)
+\end{lstlisting}
+
+\end{itemize}
+
 %----------------------------------------------------------------------
-\subsection{ANOVA à un facteur}
+\subsection{ANOVA}
 %----------------------------------------------------------------------
 
-% [texte à rédiger par Thibaud]
+On utilise le jeu $G$. On fabrique deux facteurs : $F_1$ à partir de $X_6$ (déjà discret) et $F_2$ en découpant $X_7$ en trois classes. L'ANOVA revient à une régression linéaire avec des variables qualitatives.
+
+\subsubsection{Notre démarche}
+
+On regarde d'abord les moyennes par groupe et les boxplots (figure~\ref{fig:anova_main}, gauche). Puis on fait une ANOVA à un facteur sur chaque facteur, et une ANOVA à deux facteurs avec interaction. Le graphique d'interaction (figure~\ref{fig:anova_main}, droite) permet de voir si les courbes sont parallèles ou non.
+
+\begin{lstlisting}
+G$F1 <- factor(G$X6)
+G$F2 <- cut(G$X7, breaks = c(-Inf, 6, 9, Inf), labels = c("bas", "moyen", "haut"))
+tapply(G$Y, G$F1, mean)
+boxplot(Y ~ F1, data = G)
+
+aov_2f <- aov(Y ~ F1 * F2, data = G)
+summary(aov_2f)
+interaction.plot(G$F2, G$F1, G$Y)
+\end{lstlisting}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.48\textwidth]{figures/anova_boxplots.png}
     \hfill
     \includegraphics[width=0.48\textwidth]{figures/anova_interaction.png}
-    \caption{Boxplots par groupe et graphique d'interaction -- ANOVA.}
+    \caption{Boxplots par groupe et graphique d'interaction, jeu $G$.}
     \label{fig:anova_main}
 \end{figure}
 
+On vérifie ensuite la normalité des résidus avec un QQ-plot (figure~\ref{fig:anova_diag}).
+
+\begin{lstlisting}
+qqnorm(rstudent(aov_2f))
+qqline(rstudent(aov_2f))
+\end{lstlisting}
+
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{figures/anova_diag.png}
-    \caption{Diagnostics des résidus -- ANOVA.}
+    \includegraphics[width=0.6\textwidth]{figures/anova_diag.png}
+    \caption{QQ-plot des résidus de l'ANOVA à deux facteurs.}
     \label{fig:anova_diag}
 \end{figure}
+
+\subsubsection{Apport de l'IA}
+
+\begin{itemize}
+    \item \textbf{Test post-hoc de Tukey.} L'ANOVA dit seulement qu'au moins un groupe diffère. L'IA ajoute le test de Tukey qui dit précisément quelles modalités diffèrent entre elles.
+
+\begin{lstlisting}
+TukeyHSD(aov_2f, which = "F2")
+\end{lstlisting}
+
+    \item \textbf{Garder la variable quantitative.} L'IA fait remarquer que découper $X_7$ en classes fait perdre de l'information, et propose de garder $X_7$ telle quelle dans une régression.
+
+\begin{lstlisting}
+modele_X7_quanti <- lm(Y ~ X6 + X7, data = G)
+summary(modele_X7_quanti)
+\end{lstlisting}
+
+    \item \textbf{Test de Levene.} Pour l'égalité des variances, l'IA utilise le test de Levene, plus robuste que Bartlett quand les données ne sont pas tout à fait normales.
+
+\begin{lstlisting}
+library(car)
+leveneTest(Y ~ F1, data = G)
+\end{lstlisting}
+
+\end{itemize}
 
 \newpage
 %======================================================================
 \section{Sélection de variables}
 %======================================================================
 
-Cette section traite la sélection de variables explicatives dans un modèle de régression linéaire multiple. Trois jeux de données sont analysés : \texttt{data5} (objet \texttt{E}), \texttt{data6} (objet \texttt{F}) et \texttt{data7} (objet \texttt{G}), chacun contenant $p = 5$ variables explicatives $X_1, \dots, X_5$ et une variable réponse $Y$. Le code R complet correspondant se trouve dans \texttt{code/script\_evrard.R}.
+On dispose de trois jeux ($E$, $F$, $G$) avec cinq variables explicatives chacun. Le but est de choisir le meilleur sous-ensemble de variables : avec trop de variables on risque le sur-ajustement, avec trop peu on perd de l'information. On compare les modèles avec le $R^2$ ajusté et le critère AIC.
 
 %----------------------------------------------------------------------
-\subsection{Cadre théorique}
+\subsection{Notre démarche}
 %----------------------------------------------------------------------
 
-En régression linéaire multiple avec $p$ prédicteurs, le modèle complet s'écrit
-\[
-Y_i = \beta_0 + \beta_1 X_{i,1} + \cdots + \beta_p X_{i,p} + U_i.
-\]
-Lorsque $p$ est grand, tous les prédicteurs ne sont pas nécessairement utiles. La sélection de variables vise à identifier le sous-modèle le plus parcimonieux tout en conservant une capacité explicative satisfaisante. Deux outils clés guident cette sélection :
+On regarde d'abord la matrice de corrélation et le modèle complet. Ensuite on utilise \texttt{regsubsets()} (package \texttt{leaps}), qui donne pour chaque taille de modèle le meilleur sous-ensemble de variables. On trace le $R^2$ ajusté en fonction du nombre de variables et on prend le maximum (figure~\ref{fig:select_E}).
 
-\begin{itemize}
-    \item Le \textbf{$R^2$ ajusté} ($R^2_a$), qui pénalise l'ajout de variables non informatives :
-    \[
-    R^2_a = 1 - \frac{(1 - R^2)(n - 1)}{n - p - 1}.
-    \]
-    \item Le critère \textbf{AIC} (Akaike Information Criterion), qui équilibre ajustement et parcimonie :
-    \[
-    \mathrm{AIC} = -2 \log L + 2(p + 1),
-    \]
-    où $L$ est la vraisemblance du modèle. Un AIC plus bas indique un meilleur modèle.
-\end{itemize}
+\begin{lstlisting}
+library(leaps)
+cor(E)
+complet_E <- lm(Y ~ X1 + X2 + X3 + X4 + X5, data = E)
 
-Trois stratégies de sélection sont considérées :
-\begin{enumerate}
-    \item \textbf{Méthode exhaustive} : on évalue tous les $2^p$ sous-modèles possibles et on retient celui qui maximise le $R^2_a$. Avec $p = 5$, cela donne $2^5 = 32$ modèles, ce qui est faisable.
-    \item \textbf{Sélection \emph{forward}} : on part du modèle vide et on ajoute itérativement la variable qui améliore le plus le critère choisi.
-    \item \textbf{Sélection \emph{backward}} : on part du modèle complet et on retire itérativement la variable la moins significative.
-\end{enumerate}
-
-%----------------------------------------------------------------------
-\subsection{Approche étudiant}
-%----------------------------------------------------------------------
-
-\subsubsection{Description des données}
-
-Les trois jeux de données partagent la même structure ($n$ observations, $5$ prédicteurs) mais présentent des profils de corrélation très différents avec $Y$ (tableau~\ref{tab:sel_cor}).
-
-\begin{table}[H]
-\centering
-\begin{tabular}{lccccc}
-\toprule
-& $X_1$ & $X_2$ & $X_3$ & $X_4$ & $X_5$ \\
-\midrule
-\texttt{data5} (E) & \textbf{1,000} & $-0{,}002$ & $0{,}036$ & $0{,}001$ & $0{,}016$ \\
-\texttt{data6} (F) & $0{,}281$ & $0{,}018$ & \textbf{0,973} & $-0{,}051$ & $0{,}074$ \\
-\texttt{data7} (G) & $0{,}040$ & $0{,}041$ & $0{,}015$ & $-0{,}011$ & \textbf{0,997} \\
-\bottomrule
-\end{tabular}
-\caption{Corrélations de Pearson entre chaque prédicteur et $Y$.}
-\label{tab:sel_cor}
-\end{table}
-
-Dans chaque cas, une variable domine : $X_1$ pour \texttt{data5}, $X_3$ pour \texttt{data6}, $X_5$ pour \texttt{data7}. La question est de savoir si les autres variables apportent quelque chose au modèle ou si la variable dominante suffit.
-
-\subsubsection{Sélection exhaustive}
-
-On ajuste les $2^5 = 32$ sous-modèles possibles et on calcule le $R^2_a$ pour chacun. Le tableau~\ref{tab:sel_exhaustive} résume le meilleur modèle par taille pour chaque dataset.
-
-\begin{table}[H]
-\centering
-\begin{tabular}{llcc}
-\toprule
-Dataset & Modèle & $R^2_a$ & AIC \\
-\midrule
-\multirow{5}{*}{\texttt{data5}} & $X_1$ & $0{,}99971$ & $1538{,}8$ \\
-& $X_1 + X_5$ & $0{,}99975$ & $1463{,}3$ \\
-& $X_1 + X_4 + X_5$ & $0{,}99975$ & $1462{,}7$ \\
-& $X_1 + X_3 + X_4 + X_5$ & $0{,}99975$ & $1461{,}8$ \\
-& $X_1 + X_2 + X_3 + X_4 + X_5$ & $0{,}99975$ & $1462{,}5$ \\
-\midrule
-\multirow{5}{*}{\texttt{data6}} & $X_3$ & $0{,}94632$ & $5589{,}1$ \\
-& $X_1 + X_3$ & $0{,}99786$ & $3978{,}3$ \\
-& $X_1 + X_3 + X_4$ & $0{,}99983$ & $2713{,}8$ \\
-& $X_1 + X_2 + X_3 + X_4$ & $0{,}99998$ & $1644{,}9$ \\
-& $X_1 + X_2 + X_3 + X_4 + X_5$ & $0{,}99999$ & $1422{,}4$ \\
-\midrule
-\multirow{5}{*}{\texttt{data7}} & $X_5$ & $0{,}99411$ & $23481{,}2$ \\
-& $X_1 + X_5$ & $0{,}99618$ & $21317{,}1$ \\
-& $X_1 + X_3 + X_5$ & $0{,}99618$ & $21317{,}2$ \\
-& $X_1 + X_2 + X_3 + X_5$ & $0{,}99618$ & $21318{,}0$ \\
-& $X_1 + X_2 + X_3 + X_4 + X_5$ & $0{,}99618$ & $21319{,}1$ \\
-\bottomrule
-\end{tabular}
-\caption{Meilleur sous-modèle par taille (exhaustive).}
-\label{tab:sel_exhaustive}
-\end{table}
-
-Sur les trois datasets, le $R^2_a$ augmente avec le nombre de variables mais l'AIC se stabilise vite. Sur \texttt{data5}, l'AIC minimum est atteint pour $p = 4$ ($X_1 + X_3 + X_4 + X_5$) et non pour le modèle complet. Sur \texttt{data7}, l'AIC minimum est atteint pour $p = 2$ ($X_1 + X_5$).
-
-\subsubsection{Sélection forward et backward}
-
-La sélection \emph{forward} part du modèle vide et ajoute la meilleure variable à chaque étape. La sélection \emph{backward} part du modèle complet et retire la moins significative à chaque étape.
-
-\begin{table}[H]
-\centering
-\begin{tabular}{lll}
-\toprule
-Dataset & Forward & Backward \\
-\midrule
-\texttt{data5} (E) & $X_1 + X_5 + X_4 + X_3 + X_2$ (tout) & $X_1$ seul \\
-\texttt{data6} (F) & $X_3 + X_1 + X_4 + X_2 + X_5$ (tout) & $X_3$ seul \\
-\texttt{data7} (G) & $X_5 + X_1 + X_3 + X_2 + X_4$ (tout) & $X_5$ seul \\
-\bottomrule
-\end{tabular}
-\caption{Résultats de la sélection forward et backward.}
-\label{tab:sel_fwd_bwd}
-\end{table}
-
-Le forward garde \emph{toutes} les variables sur les trois datasets : à chaque étape, le $R^2_a$ augmente légèrement, donc la procédure n'a aucune raison de s'arrêter. Le backward, lui, retire agressivement les variables non significatives et ne garde que la variable dominante. Ce désaccord est la situation typique où l'intervention humaine (ou un critère automatique) est nécessaire pour trancher.
-
-\subsubsection{Apport de l'IA}
-
-\begin{itemize}
-    \item \textbf{Sélection automatique par \texttt{step()}.} L'IA utilise la fonction \texttt{step()} de R pour automatiser la sélection \emph{backward}, \emph{forward} et \emph{both} par critère AIC. Les résultats diffèrent du backward manuel (qui retire tout) car la fonction \texttt{step()} utilise l'AIC comme critère d'arrêt plutôt que le seuil de p-valeur.
-    
-    Sur \texttt{data5}, \texttt{step()} retient $X_1 + X_3 + X_4 + X_5$ (AIC $= 1461{,}8$) : il garde les variables dont l'ajout améliore l'AIC, même si leur p-valeur est marginale. Sur \texttt{data7}, il retient $X_1 + X_5$ (AIC $= 21317{,}1$).
-    
-    \item \textbf{Comparaison forward / backward / both.} Le tableau~\ref{tab:sel_step} résume les résultats de \texttt{step()} sur les trois datasets.
-\end{itemize}
-
-\begin{table}[H]
-\centering
-\begin{tabular}{llll}
-\toprule
-Dataset & Backward & Forward & Both \\
-\midrule
-\texttt{data5} & $X_1 + X_3 + X_4 + X_5$ & $X_1 + X_5 + X_4 + X_3$ & $X_1 + X_3 + X_4 + X_5$ \\
-\texttt{data6} & $X_1 + X_2 + X_3 + X_4 + X_5$ & $X_3 + X_1 + X_4 + X_2 + X_5$ & $X_1 + X_2 + X_3 + X_4 + X_5$ \\
-\texttt{data7} & $X_1 + X_5$ & $X_5 + X_1$ & $X_1 + X_5$ \\
-\bottomrule
-\end{tabular}
-\caption{Résultats de \texttt{step()} (backward, forward, both).}
-\label{tab:sel_step}
-\end{table}
-
-\begin{itemize}
-    \item \textbf{Multicolinéarité (VIF).} Sur \texttt{data5}, les VIF sont proches de $1$ : pas de problème de multicolinéarité. Les prédicteurs sont quasi orthogonaux, ce qui explique que $X_1$ absorbe presque toute la variabilité de $Y$.
-    
-    \item \textbf{Interprétation de l'effet net.} Sur les trois datasets, les variables secondaires ($X_2$, $X_3$, $X_4$ selon les cas) ont des corrélations marginales quasi nulles avec $Y$ mais deviennent parfois significatives dans le modèle multiple. Ce phénomène d'\emph{effet net} est identique à celui observé par Thibaud sur \texttt{data5} avec la variable $X_5$.
-    
-    \item \textbf{Diagnostics du modèle final.} Les tests de Kolmogorov-Smirnov sur les résidus studentisés du modèle réduit donnent des p-valeurs élevées ($0{,}999$ pour $X_1$ sur \texttt{data5}, $0{,}142$ pour $X_3$ sur \texttt{data6}, $0{,}257$ pour $X_5$ sur \texttt{data7}), confirmant la normalité des résidus.
-\end{itemize}
+sel_E <- regsubsets(Y ~ X1 + X2 + X3 + X4 + X5, data = E)
+summary(sel_E)$which
+summary(sel_E)$adjr2
+which.max(summary(sel_E)$adjr2)
+plot(summary(sel_E)$adjr2, type = "b", xlab = "nb variables", ylab = "R2 ajuste")
+\end{lstlisting}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{figures/sel_r2a_taille.png}
-    \caption{$R^2_a$ du meilleur modèle en fonction du nombre de variables pour les trois datasets.}
-    \label{fig:sel_r2a_taille}
+    \includegraphics[width=0.6\textwidth]{figures/select_adjr2_E.png}
+    \caption{$R^2$ ajusté en fonction du nombre de variables, jeu $E$.}
+    \label{fig:select_E}
 \end{figure}
+
+On refait la même chose avec les méthodes pas à pas forward et backward, pour vérifier qu'elles donnent le même modèle que la recherche sur tous les sous-ensembles.
+
+\begin{lstlisting}
+sel_E_f <- regsubsets(Y ~ X1 + X2 + X3 + X4 + X5, data = E, method = "forward")
+sel_E_b <- regsubsets(Y ~ X1 + X2 + X3 + X4 + X5, data = E, method = "backward")
+summary(sel_E_f)$which
+summary(sel_E_b)$which
+\end{lstlisting}
+
+On applique exactement la même démarche aux jeux $F$ et $G$ (figure~\ref{fig:select_FG}). Le $R^2$ ajusté atteint son maximum pour un sous-ensemble qui n'utilise pas toutes les variables, ce qui confirme qu'il faut bien en retirer certaines.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{figures/sel_aic_taille.png}
-    \caption{AIC et BIC du meilleur modèle en fonction de la taille.}
-    \label{fig:sel_aic_taille}
+    \includegraphics[width=0.48\textwidth]{figures/select_adjr2_F.png}
+    \hfill
+    \includegraphics[width=0.48\textwidth]{figures/select_adjr2_G.png}
+    \caption{$R^2$ ajusté en fonction du nombre de variables, jeux $F$ (gauche) et $G$ (droite).}
+    \label{fig:select_FG}
 \end{figure}
 
 %----------------------------------------------------------------------
-\subsection{Synthèse}
+\subsection{Apport de l'IA}
 %----------------------------------------------------------------------
 
-Les trois datasets illustrent trois cas de figure de la sélection de variables :
-
 \begin{itemize}
-    \item \textbf{\texttt{data5} : une variable écrase tout.} $X_1$ a une corrélation quasi parfaite avec $Y$ ($r = 1$). Le backward ne garde que $X_1$ ; le forward garde tout ; \texttt{step()} retient $X_1 + X_3 + X_4 + X_5$. L'AIC suggère que les variables secondaires apportent une amélioration marginale mais réelle.
-    
-    \item \textbf{\texttt{data6} : toutes les variables sont utiles.} $X_3$ domine ($r = 0{,}97$) mais les autres variables ont des effets résiduels significatifs. Le backward ne garde que $X_3$ ; \texttt{step()} garde tout. C'est le cas où la sélection backward est trop agressive.
-    
-    \item \textbf{\texttt{data7} : compromis visible.} $X_5$ domine ($r = 0{,}997$). Le backward ne garde que $X_5$ ; \texttt{step()} retient $X_1 + X_5$. L'AIC minimum est atteint pour $p = 2$, ce qui valide le choix de deux variables.
-\end{itemize}
+    \item \textbf{Sélection par AIC avec \texttt{step()}.} Le $R^2$ ajusté n'est qu'un critère parmi d'autres. L'IA fait la sélection avec \texttt{step()} basé sur l'AIC, dans les trois directions (backward, forward, both), et on compare les modèles obtenus.
 
-L'apport principal de l'IA dans cette section est triple : (i)~l'automatisation de la sélection via \texttt{step()} fournit un critère d'arrêt basé sur l'AIC plutôt que sur un seuil de p-valeur arbitraire ; (ii)~la comparaison des trois méthodes (forward, backward, both) permet de jauger la stabilité du choix ; (iii)~l'analyse des VIF et des diagnostics formels objective des conclusions qu'un étudiant tirerait uniquement du tableau de régression.
+\begin{lstlisting}
+step_back_E <- step(complet_E, direction = "backward", trace = 0)
+step_forw_E <- step(lm(Y ~ 1, data = E), direction = "forward",
+                    scope = formula(complet_E), trace = 0)
+step_both_E <- step(complet_E, direction = "both", trace = 0)
+cat("backward :", paste(names(coef(step_back_E))[-1], collapse = " + "),
+    "| AIC =", round(AIC(step_back_E), 1), "\n")
+\end{lstlisting}
+
+    \item \textbf{Multicolinéarité (VIF).} L'IA vérifie avec les VIF que les variables retenues ne sont pas redondantes entre elles, ce qui rendrait les coefficients instables.
+
+\begin{lstlisting}
+library(car)
+vif(complet_E)
+\end{lstlisting}
+
+    \item \textbf{Homoscédasticité.} Comme dans les autres sections, l'IA ajoute un test de Breusch-Pagan sur le modèle retenu.
+
+\begin{lstlisting}
+library(lmtest)
+bptest(complet_E)
+\end{lstlisting}
+
+\end{itemize}
 
 \newpage
 \section*{Conclusion}
-% [À rédiger collectivement]
+
+Sur l'ensemble du projet, notre démarche d'étudiants nous a permis de traiter correctement tous les cas : ajuster un modèle, lire les sorties de R, vérifier les hypothèses avec les résidus et les tests, repérer les problèmes (points aberrants, non-linéarité, variables inutiles) et y réagir. L'IA, elle, n'a presque jamais changé nos conclusions, mais elle a systématiquement apporté des outils en plus : des tests formels pour objectiver les diagnostics graphiques (Breusch-Pagan, Shapiro, Levene), des méthodes plus robustes que la suppression manuelle (régression robuste, distance de Cook, bootstrap, erreurs sandwich), et de l'automatisation pour les choix qu'on faisait à la main (régression segmentée, \texttt{step()} par AIC). En résumé, l'IA ne remplace pas le raisonnement statistique mais elle élargit la boîte à outils et fiabilise les conclusions.
 
 \end{document}
