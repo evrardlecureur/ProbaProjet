@@ -10,30 +10,21 @@
 modele_E <- lm(Y ~ X1 + X2 + X3 + X4 + X5, data = E)
 summary(modele_E)
 
-pairs(E, pch = 16, cex = 0.4, main = "data5")
+pairs(E)
+cor(E)
 
-# matrice de corrélation
-round(cor(E), 3)
-
-# diagnostic
 par(mfrow = c(2, 2))
 plot(modele_E)
 par(mfrow = c(1, 1))
 
-# normalité des résidus studentisés contre T(n-p-1)
-n_E <- nrow(E)
-ks.test(rstudent(modele_E), "pt", df = n_E - 6)
-
-# intervalles de confiance des coefficients
 confint(modele_E)
 
-# X2 n'est pas significative : on la retire
+# X2 a une p-value trop grande, on l'enlève
 modele_E2 <- lm(Y ~ X1 + X3 + X4 + X5, data = E)
 summary(modele_E2)
 
-# comparaison par test F emboîté
+# est-ce qu'on perd quelque chose en enlevant X2 ?
 anova(modele_E2, modele_E)
-# pas de différence significative => on garde le modèle réduit
 
 
 ## partie IA
@@ -56,44 +47,33 @@ bptest(modele_E)
 
 ## partie étudiant
 
-# tentative d'un modèle linéaire simple
+# on essaie d'abord une droite
 modele_lin <- lm(Y ~ X, data = D)
 summary(modele_lin)
 
-# la corrélation entre X^2 et Y est plus forte que celle entre X et Y
-cat("cor(X,Y) =", cor(D$X, D$Y),
-    "| cor(X^2,Y) =", cor(D$X^2, D$Y), "\n")
+# Y a l'air de suivre X au carré plutôt que X
+cor(D$X, D$Y)
+cor(D$X^2, D$Y)
 
 # modèle quadratique
 modele_poly2 <- lm(Y ~ X + I(X^2), data = D)
 summary(modele_poly2)
 
-# tracé : nuage + droite linéaire + parabole + IC prédiction 95%
-x_seq <- seq(min(D$X), max(D$X), length.out = 300)
-y_hat <- predict(modele_poly2, newdata = data.frame(X = x_seq),
-                 interval = "prediction", level = 0.95)
+plot(D$X, D$Y, main = "data4")
 
-plot(D$X, D$Y, pch = 16, cex = 0.5,
-     main = "D - régression polynomiale degré 2")
-lines(x_seq, y_hat[, "fit"], col = "red", lwd = 2)
-lines(x_seq, y_hat[, "lwr"], col = "blue", lty = 2)
-lines(x_seq, y_hat[, "upr"], col = "blue", lty = 2)
-abline(modele_lin, col = "darkgreen", lwd = 2, lty = 3)
-legend("topleft", c("polynomial deg.2", "IC prédiction 95%", "linéaire"),
-       col = c("red", "blue", "darkgreen"), lty = c(1, 2, 3))
+x_seq <- seq(min(D$X), max(D$X), length.out = 100)
+plot(D$X, D$Y, main = "data4")
+lines(x_seq, predict(modele_poly2, data.frame(X = x_seq)), col = "red")
 
-# test F : le terme X^2 apporte-t-il vraiment quelque chose ?
+# le terme X^2 est-il utile ?
 anova(modele_lin, modele_poly2)
 
-# diagnostic
 par(mfrow = c(2, 2))
 plot(modele_poly2)
 par(mfrow = c(1, 1))
 
-ks.test(rstudent(modele_poly2), "pt", df = nrow(D) - 4)
-
-cat("R² linéaire :", summary(modele_lin)$r.squared,
-    "| R² deg.2 :", summary(modele_poly2)$r.squared, "\n")
+summary(modele_lin)$r.squared
+summary(modele_poly2)$r.squared
 
 
 ## partie IA
@@ -117,19 +97,15 @@ summary(modele_poly_orth)
 
 ## partie étudiant
 
-# X6 binaire et X7 entier 1-15 traités comme facteurs
-G$F1 <- factor(G$X6, labels = c("groupe0", "groupe1"))
-G$F2 <- cut(G$X7, breaks = c(-Inf, 6, 9, Inf),
-            labels = c("bas", "moyen", "haut"))
+G$F1 <- factor(G$X6)
+G$F2 <- cut(G$X7, breaks = c(-Inf, 6, 9, Inf), labels = c("bas", "moyen", "haut"))
 
-table(G$F1, G$F2)
 tapply(G$Y, G$F1, mean)
 tapply(G$Y, G$F2, mean)
 
-# visualisation
 par(mfrow = c(1, 2))
-boxplot(Y ~ F1, data = G, col = "lightblue",  main = "Y par F1")
-boxplot(Y ~ F2, data = G, col = "lightgreen", main = "Y par F2")
+boxplot(Y ~ F1, data = G)
+boxplot(Y ~ F2, data = G)
 par(mfrow = c(1, 1))
 
 # ANOVA à 1 facteur
@@ -143,18 +119,11 @@ summary(aov_F2)
 aov_2f <- aov(Y ~ F1 * F2, data = G)
 summary(aov_2f)
 
-interaction.plot(G$F2, G$F1, G$Y,
-                 xlab = "F2", ylab = "Y moyenne", trace.label = "F1",
-                 col = c("red", "blue"), lwd = 2,
-                 main = "interaction F1 x F2")
-
-# homoscédasticité (Bartlett)
-bartlett.test(Y ~ F1, data = G)
-bartlett.test(Y ~ F2, data = G)
+interaction.plot(G$F2, G$F1, G$Y)
 
 # normalité des résidus
-qqnorm(rstudent(aov_2f), main = "ANOVA - QQ-plot")
-qqline(rstudent(aov_2f), col = "red")
+qqnorm(rstudent(aov_2f))
+qqline(rstudent(aov_2f))
 
 
 ## partie IA
