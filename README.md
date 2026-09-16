@@ -1,98 +1,96 @@
-# Projet Régression Linéaire - Polytech Nice Sophia MAM3
+# 📈 ProbaProjet: Linear Regression, Student versus AI
 
-## Contexte et objectif
+[![CI](https://github.com/evrardlecureur/ProbaProjet/actions/workflows/ci.yml/badge.svg)](https://github.com/evrardlecureur/ProbaProjet/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/evrardlecureur/ProbaProjet/actions/workflows/codeql.yml/badge.svg)](https://github.com/evrardlecureur/ProbaProjet/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/evrardlecureur/ProbaProjet?sort=semver)](https://github.com/evrardlecureur/ProbaProjet/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![R](https://img.shields.io/badge/R-4.x-276DC3?logo=r&logoColor=white)
+![LaTeX](https://img.shields.io/badge/LaTeX-Tectonic-008080?logo=latex&logoColor=white)
 
-Ce projet explore la régression linéaire sur les jeux de données fournis par l'enseignante (Data1 à Data4 pour la régression simple, autres datasets pour la suite). L'objectif est d'expliquer une variable réponse à l'aide de modèles linéaires en justifiant chaque choix de modélisation.
+What does an AI add to a third-year student's linear regression, and where does the student's reasoning still matter?
 
-**Particularité :** le projet est réalisé en deux temps. D'abord par les étudiants seuls (niveau bac+3), puis avec assistance IA. Chaque section du rapport comporte un paragraphe dédié comparant les deux approches.
+This project fits **linear models in R** on seven datasets provided by the instructor: simple regression with its inference and residual diagnostics, multiple and polynomial regression, ANOVA and variable selection. Its particularity is the **two-pass method**: every part is first done by the students alone (a *partie étudiant* block in each script), then redone with AI assistance (a *partie IA* block), and each section of the report ends with a comparison of the two approaches.
 
----
+| Context | Authors |
+| --- | --- |
+| Linear regression project (MAM3), May 2026, Polytech Nice Sophia (Université Côte d'Azur) | Evrard Lecureur, Romain Ben, Thibaud Crotta |
 
-## Répartition des rôles
+## 📸 Preview
 
-### Evrard - Coordination + Sélection de variables
+| Dataset D: a V-shaped relation, the break point estimated by segmented regression | Dataset E: adjusted R² of the best model of each size |
+| --- | --- |
+| ![Segmented regression on dataset D](figures/RegressionSegmente-D.png) | ![Adjusted R² per number of variables on dataset E](figures/select_adjr2_E.png) |
 
-- Structure du dépôt, coordination de l'équipe, calendrier
-- **Sélection de variables :** méthode exhaustive (comparaison des 2^p modèles par R²_a), méthodes pas à pas (forward, backward, stepwise)
-- Rédaction des sections correspondantes du rapport
+## 🎯 What Each Dataset Teaches
 
-### Romain - Régression linéaire simple
+| Dataset | Question | Student approach | What the AI pass adds |
+| --- | --- | --- | --- |
+| A | The ideal case | `lm()`, Student test on the slope, rejection region, studentized residuals, QQ-plot, Kolmogorov-Smirnov | Least squares formulas checked by hand, Breusch-Pagan and Shapiro-Wilk tests, prediction intervals |
+| B | Outliers | Residuals beyond 3 removed, the model refitted | Cook's distance (influence rather than size), robust regression `rlm()` compared with removal |
+| C | Small sample (n = 50) | Wider confidence interval of the slope | Robust standard errors (`sandwich`), bootstrap confidence interval (2000 resamples) |
+| D | V-shaped relation | A single line fails; two lines split at X = 30 | Segmented regression with the break point estimated (`segmented`), piecewise model with one `lm()` |
+| E | Five predictors | Multiple regression, a predictor dropped on its p-value, nested F-test | Backward selection by AIC, VIF for multicollinearity, Breusch-Pagan |
+| D again | Curvature | Quadratic model, F-test against the line | Degrees 2 to 4 compared by AIC, orthogonal polynomials |
+| G | Qualitative factors | One- and two-way ANOVA with interaction | Tukey post-hoc test, the quantitative variable kept instead of binned, Levene test |
+| E, F, G | Variable selection | Exhaustive search by adjusted R² (`leaps`), forward and backward | Stepwise selection by AIC in three directions, VIF |
 
-- **Modélisation de base :** ajustement MCO, estimation de â et b̂, droite de régression
-- **Inférence statistique :** test H0 : a = 0 via statistique de Student, région de rejet, p-valeur
-- **Vérification des hypothèses :** résidus studentisés, graphique résidus vs ajustés, QQ-plot, test de Kolmogorov-Smirnov
-- **Cas particuliers :** outliers (Dataset B), petit échantillon (Dataset C), relation non-linéaire en V (Dataset D)
-- **Prédiction :** intervalles de prédiction pour une nouvelle observation
-- Rédaction des sections correspondantes du rapport
+The report (`rapport.tex`, in French) follows the same three parts, with a comparison paragraph at the end of each section.
 
-### Thibaud - Régression multiple, polynomiale et ANOVA
+## 🚀 Getting Started
 
-- **Régression multiple :** formulation matricielle Y = Xβ + U, estimateur (X'X)^{-1}X'Y, R² ajusté, test de Fisher global, tests individuels sur les βk
-- **Régression polynomiale :** modèles aX² + b et aX² + bX + c comme cas particuliers de régression multiple, inférence sur chaque coefficient
-- **ANOVA à un facteur :** connexion entre ANOVA et régression linéaire avec variable qualitative
-- Rédaction des sections correspondantes du rapport
+Requires R 4.x and [Tectonic](https://tectonic-typesetting.github.io/) for the report. The datasets (`Data1.R` to `Data4.R` for datasets A to D, `data5.RData` to `data7.RData` for E to G) are provided by the instructor and are **not** in the repository.
 
----
-
-## Convention rapport - Comparaison IA / étudiant
-
-Dans chaque section du rapport, la structure est la suivante :
-
-1. **Approche étudiant (bac+3)** : démarche manuelle, interprétation des sorties R, raisonnement statistique classique
-2. **Apport de l'IA** : ce que l'IA fait en plus ou différemment (automatisation, diagnostics avancés, choix de modèle, interprétations supplémentaires...)
-
-L'objectif est de montrer concrètement ce que l'IA apporte par rapport à un travail d'étudiant de niveau bac+3 sur chacun des points traités.
-
----
-
-## Roadmap
-
-### Etape 1 - Exploration des données (tous)
-
-- Chargement des jeux de données fournis
-- Choix de la variable réponse et des variables explicatives candidates
-- Statistiques descriptives, visualisations préliminaires
-
-### Etape 2 - Régression linéaire simple (Romain)
-
-- Ajustement `lm()` et lecture du `summary()`
-- Graphique nuage de points + droite ajustée
-- Test de Student sur la pente + graphique de la région de rejet sous la loi de Student
-- Analyse des résidus : graphique résidus vs ajustés, détection d'hétéroscédasticité
-- QQ-plot des résidus studentisés + test de Kolmogorov-Smirnov
-- Traitement des cas problématiques : outliers, petit échantillon, non-linéarité
-- Intervalle de prédiction pour une nouvelle observation
-
-### Etape 3 - Régression multiple, polynomiale et ANOVA (Thibaud)
-
-- Extension au cas p variables explicatives, formulation matricielle
-- R² ajusté et test de Fisher global
-- Régression polynomiale : ajustement de aX² + b puis aX² + bX + c, comparaison des modèles
-- ANOVA à un facteur : connexion avec la régression linéaire via variable indicatrice
-
-### Etape 4 - Sélection de variables (Evrard)
-
-- Calcul du R²_a pour l'ensemble des 2^p sous-modèles possibles
-- Identification du modèle optimal
-- Comparaison avec les méthodes pas à pas (forward, backward, stepwise) via critère AIC
-
-### Etape 5 - Rapport final (tous)
-
-- Rédaction en LaTeX (`rapport.tex`)
-- Intégration des graphiques produits sous R
-- Paragraphes de comparaison IA / étudiant dans chaque section
-- Relecture croisée et cohérence globale
-
----
-
-## Structure du dépôt
-
+```bash
+git clone https://github.com/evrardlecureur/ProbaProjet.git
+cd ProbaProjet
+Rscript -e 'install.packages(c("leaps", "car", "lmtest", "MASS", "sandwich", "boot", "segmented"))'
 ```
-/
-├── README.md
-├── rapport.tex           # Rapport LaTeX (tous)
-└── code/
-    ├── script_romain.R   # Régression simple, inférence, résidus (Romain)
-    ├── script_thibaud.R  # Régression multiple, polynomiale, ANOVA (Thibaud)
-    └── script_evrard.R   # Sélection de variables (Evrard)
+
+Load the datasets in an R session, then run the scripts in the order of the report:
+
+```r
+source("Data1.R"); source("Data2.R"); source("Data3.R"); source("Data4.R")   # A, B, C, D
+source("code/script_romain.R")    # simple regression
+source("code/script_thibaud.R")   # multiple, polynomial, ANOVA
+source("code/script_evrard.R")    # variable selection (loads data5 to data7 itself)
 ```
+
+Build the report:
+
+```bash
+tectonic -X compile rapport.tex   # writes rapport.pdf
+```
+
+The compiled report is attached to each [release](https://github.com/evrardlecureur/ProbaProjet/releases).
+
+## 📁 Repository Structure
+
+```text
+ProbaProjet/
+├── code/
+│   ├── script_romain.R      # simple regression, inference, residuals (datasets A to D)
+│   ├── script_thibaud.R     # multiple and polynomial regression, ANOVA (E, D, G)
+│   └── script_evrard.R      # variable selection (E, F, G)
+├── figures/                 # 27 figures produced by the scripts, used by the report
+├── rapport.tex              # report (French), student-versus-AI comparison in each section
+├── .github/                 # CI, CodeQL, Dependabot, issue forms, pull request template
+├── CITATION.cff             # citation metadata
+└── CHANGELOG.md             # history of the versions
+```
+
+## ✅ Quality
+
+- **CI** (`.github/workflows/ci.yml`): the R scripts are parsed (the datasets are not in the repository, so they cannot run here), the report is built with Tectonic and uploaded as an artifact, the Markdown files are checked with markdownlint and lychee.
+- **CodeQL** on the workflows, **Dependabot** for the GitHub Actions, **dependency review** on pull requests.
+
+## 👥 Authors
+
+| Member | Part |
+| --- | --- |
+| Evrard Lecureur | Coordination, variable selection |
+| Romain Ben | Simple regression, inference, residual diagnostics, special cases |
+| Thibaud Crotta | Multiple and polynomial regression, ANOVA |
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE). The datasets belong to the course and are not distributed here.
