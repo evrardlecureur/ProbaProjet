@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- CI: syntax check of the R scripts, report built with Tectonic (PDF as artifact), markdownlint and lychee, dependency review and CodeQL on the workflows
+- CI: syntax check of the R scripts, report built with Tectonic (PDF as artifact), markdownlint and lychee and CodeQL on the workflows
 - Dependabot for the GitHub Actions
 - MIT License, contributing guide, code of conduct, security policy, citation metadata, issue forms and pull request template
 - README rewritten in English: the project, the student-versus-AI structure, what each dataset teaches, getting started, repository structure and quality checks

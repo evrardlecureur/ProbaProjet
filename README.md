@@ -81,7 +81,7 @@ ProbaProjet/
 ## ✅ Quality
 
 - **CI** (`.github/workflows/ci.yml`): the R scripts are parsed (the datasets are not in the repository, so they cannot run here), the report is built with Tectonic and uploaded as an artifact, the Markdown files are checked with markdownlint and lychee.
-- **CodeQL** on the workflows, **Dependabot** for the GitHub Actions, **dependency review** on pull requests.
+- **CodeQL** on the workflows, **Dependabot** for the GitHub Actions.
 
 ## 👥 Authors
 
