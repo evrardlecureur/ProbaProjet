@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # The datasets are provided by the instructor and are not in the repository,
+  # so the scripts cannot run here: the job checks that they parse.
+  r:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Check the syntax of the R scripts
+        run: |
+          Rscript -e '
+            scripts <- list.files("code", pattern = "[.]R$", full.names = TRUE)
+            for (f in scripts) { parse(f); cat("OK", f, "\n") }
+          '
+
+  report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Tectonic
+        uses: wtfjoke/setup-tectonic@v4
+
+      - name: Compile the report
+        run: tectonic -X compile rapport.tex
+
+      - name: Upload the PDF
+        uses: actions/upload-artifact@v7
+        with:
+          name: report
+          path: rapport.pdf
+
+  docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Lint Markdown with markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v24
+        with:
+          globs: "**/*.md"
+
+      # Offline mode checks the links to repository files, the heading anchors
+      # and the images without depending on the availability of external sites.
+      - name: Check links, anchors and images with lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --include-fragments --no-progress .
+          jobSummary: true

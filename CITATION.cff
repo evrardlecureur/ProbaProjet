@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this project, please cite it using the metadata below."
+type: software
+title: "ProbaProjet: linear regression in R, a student-versus-AI comparison"
+abstract: >-
+  Linear regression project at Polytech Nice Sophia (MAM3): simple regression
+  with inference and residual diagnostics, multiple and polynomial regression,
+  ANOVA and variable selection on seven datasets, in R. Each part is done first
+  by the students alone, then with AI assistance, and the report compares the
+  two approaches section by section.
+authors:
+  - given-names: Evrard
+    family-names: Lecureur
+    affiliation: "Polytech Nice Sophia, Université Côte d'Azur"
+  - given-names: Romain
+    family-names: Ben
+    affiliation: "Polytech Nice Sophia, Université Côte d'Azur"
+  - given-names: Thibaud
+    family-names: Crotta
+    affiliation: "Polytech Nice Sophia, Université Côte d'Azur"
+version: 1.0.0
+date-released: 2026-05-29
+license: MIT
+repository-code: "https://github.com/evrardlecureur/ProbaProjet"
+keywords:
+  - linear regression
+  - least squares
+  - ANOVA
+  - variable selection
+  - R
+  - statistics
+  - AI-assisted analysis
